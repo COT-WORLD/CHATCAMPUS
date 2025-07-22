@@ -44,6 +44,9 @@ INSTALLED_APPS = [
     'chatcampusapp',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'oauth2_provider',
+    'social_django',
+    'drf_social_oauth2',
 ]
 
 MIDDLEWARE = [
@@ -143,3 +146,19 @@ SIMPLE_JWT = {
     'ALGORITHM': 'HS256',
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+# DRF SSO and Custom User settings
+
+AUTHENTICATION_BACKENDS = {
+    'drf_social_oauth2.backends.GoogleIdentityBackend',
+    'drf_social_oauth2.backends.DjangoOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+}
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = config(
+    'SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE',
+    default='email,profile',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
