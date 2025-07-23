@@ -1,7 +1,9 @@
 from urllib.parse import urlparse
 from rest_framework import serializers
-from .models import Room, Topic, User
+from .models import Message, Room, Topic, User
 from PIL import Image
+import re
+import bleach
 
 
 # Custom User serializer
@@ -106,14 +108,21 @@ class RoomSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         owner = self.context["request"].user
-        topic_name = validated_data.pop("topic").strip()
-        if not topic_name:
-            raise serializers.ValidationError(
-                {"topic_input": "Topic name cannot be empty."})
-        topic, _ = Topic.objects.get_or_create(
-            topic_name=topic_name,
-            defaults={"creator": owner}
-        )
+        topic_value = validated_data.pop("topic")
+        if isinstance(topic_value, str):
+            topic_name = topic_value.strip()
+            if not topic_name:
+                raise serializers.ValidationError(
+                    {"topic": "Topic name cannot be empty."})
+            topic, _ = Topic.objects.get_or_create(
+                topic_name=topic_name,
+                defaults={"creator": owner}
+            )
+        elif isinstance(topic_value, Topic):
+            topic = topic_value
+        else:
+            raise serializers.ValidationError({"topic": "Invalid topic input"})
+
         validated_data["owner"] = owner
         validated_data["topic"] = topic
         room = super().create(validated_data)
@@ -144,3 +153,38 @@ class RoomSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"owner": "You are not allowed to change the owner."})
         return data
+
+
+# Message serializer
+class MessageSerializer(serializers.ModelSerializer):
+    owner = UserSerializer(read_only=True)
+    room = RoomSerializer(read_only=True)
+    room_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Message
+        fields = ["id", "owner", "room", "room_id", "body", "created_at"]
+        read_only_fields = ["id", "owner", "room", "created_at"]
+
+    def create(self, validated_data):
+        owner = self.context["request"].user
+        room_id = validated_data.pop("room_id")
+        try:
+            room = Room.objects.get(id=room_id)
+        except Room.DoesNotExist:
+            raise serializers.ValidationError(
+                {"room_id": "Room does not exist."})
+
+        return Message.objects.create(
+            owner=owner,
+            room=room,
+            body=validated_data["body"]
+        )
+
+    def validate_body(self, value):
+        impersonation_pattern = r"\{[a-zA-Z0-9_]+\}"
+
+        if re.search(impersonation_pattern, value):
+            raise serializers.ValidationError(
+                "Message contains impersonation pattern.")
+        return bleach.clean(value, tags=[], strip=True)

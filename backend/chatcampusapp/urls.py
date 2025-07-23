@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView, TokenRefreshView
 
-from .views import RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView
+from .views import RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView
 
 urlpatterns = [
     path('sso-auth/', include('drf_social_oauth2.urls', namespace='drf')),
@@ -15,4 +15,6 @@ urlpatterns = [
     path("rooms/<int:pk>/", RoomTopicCreateUpdateRetrieveDeleteListAPIView.as_view(),
          name="room-get-update-delete"),
     path("topics/", TopicListAPIView.as_view(), name="topic-list"),
+    path("roomDetails/<int:pk>/", RoomDetailMessageCreateAPIView.as_view(),
+         name="room-details-message-create")
 ]

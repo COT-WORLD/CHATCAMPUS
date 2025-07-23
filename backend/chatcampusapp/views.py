@@ -1,3 +1,4 @@
+from email import message
 from functools import partial
 from multiprocessing import context
 from django.shortcuts import get_object_or_404
@@ -5,9 +6,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.contrib.auth import get_user_model
-from .serializers import RoomSerializer, TopicSerializer, UserSerializer
-from .models import Room, Topic
+from .serializers import MessageSerializer, RoomSerializer, TopicSerializer, UserSerializer
+from .models import Message, Room, Topic
 from django.db.models import Count
+import bleach
 
 # Get logged in User
 User = get_user_model()
@@ -89,7 +91,6 @@ class RoomTopicCreateUpdateRetrieveDeleteListAPIView(APIView):
         """
         Create a new room.
         """
-        print(request.data)
         serializer = RoomSerializer(
             data=request.data, context={"request": request})
         if serializer.is_valid():
@@ -156,6 +157,7 @@ class RoomTopicCreateUpdateRetrieveDeleteListAPIView(APIView):
         }, status=status.HTTP_204_NO_CONTENT)
 
 
+# Topic list
 class TopicListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -167,8 +169,78 @@ class TopicListAPIView(APIView):
         else:
             topics = Topic.objects.all().annotate(room_count=Count('room_topic'))
         serializer = TopicSerializer(topics, many=True)
-        print(serializer.data)
         return Response({
             "message": "Topic retrieve suceessfully",
             "topic": serializer.data
         }, status=status.HTTP_200_OK)
+
+
+# Room details and Message create and delete
+class RoomDetailMessageCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        room = get_object_or_404(
+            Room.objects.select_related(
+                "topic", "owner").prefetch_related("participants"), id=pk
+        )
+        messages = room.room_message.select_related(
+            "owner").order_by("created_at")
+        participants = room.participants.all()
+        data = {
+            "room": RoomSerializer(room, context={"request": request}).data,
+            "messages": MessageSerializer(messages, many=True, context={"request": request}).data,
+            "participants": UserSerializer(participants, many=True, context={"request": request}).data,
+            "message_count": messages.count()
+        }
+        return Response({
+            "message": "Room details retrieve successfully",
+            "data": data,
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, pk):
+        room = get_object_or_404(Room, id=pk)
+        user = request.user
+        body = request.data.get("body", "").strip()
+        if not body:
+            return Response({
+                "message": "Message body is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # sanitize input
+
+        allowed_tags = ['p', 'b', 'i', 'ul', 'ol', 'li', 'a', 'strong', 'em']
+        allowed_attrs = {'a': ['href', 'title', 'rel']}
+        clean_body = bleach.clean(
+            body, tags=allowed_tags, attributes=allowed_attrs)
+
+        message = Message.objects.create(
+            owner=user, room=room, body=clean_body)
+
+        room.participants.add(user)
+
+        return Response({
+            "message": "Message created successfully",
+            "messages": MessageSerializer(message).data
+        }, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk: None):
+        """
+        Delete a room.
+        """
+        if not pk:
+            return Response({
+                "message": "Message Id is required to delete."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        message = get_object_or_404(Message, pk=pk)
+
+        if request.user != message.owner:
+            return Response({
+                "message": "Unauthorised to delete message."
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        message.delete()
+        return Response({
+            "message": "Message deleted successfully"
+        }, status=status.HTTP_204_NO_CONTENT)
