@@ -8,7 +8,7 @@ from PIL import Image
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "email",
+        fields = ["id", "first_name", "last_name", "email",
                   "password", "avatar", "bio", "last_login"]
         extra_kwargs = {
             "password": {"write_only": True, "required": True},

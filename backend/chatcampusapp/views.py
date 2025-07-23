@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 # Register custom User and it's public route
-class UserRegisterView(APIView):
+class UserCreateAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -27,10 +27,9 @@ class UserRegisterView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
 # Retrieve loggedin user and update their profile
-
-
-class UserProfileAPIView(APIView):
+class UserRetrieveUpdateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):

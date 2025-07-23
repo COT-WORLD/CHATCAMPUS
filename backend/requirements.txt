@@ -4,6 +4,7 @@ certifi==2025.7.14
 cffi==1.17.1
 charset-normalizer==3.4.2
 cloudinary==1.44.1
+colorama==0.4.6
 cryptography==45.0.5
 defusedxml==0.7.1
 Django==5.2.4
@@ -15,11 +16,17 @@ djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.1
 drf-social-oauth2==3.1.0
 idna==3.10
+iniconfig==2.1.0
 jwcrypto==1.5.6
 oauthlib==3.3.1
+packaging==25.0
 pillow==11.3.0
+pluggy==1.6.0
 pycparser==2.22
+Pygments==2.19.2
 PyJWT==2.10.1
+pytest==8.4.1
+pytest-django==4.11.1
 python-decouple==3.8
 python3-openid==3.2.0
 requests==2.32.4
