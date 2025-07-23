@@ -8,7 +8,7 @@ from rest_framework import status, permissions
 from django.contrib.auth import get_user_model
 from .serializers import MessageSerializer, RoomSerializer, TopicSerializer, UserSerializer
 from .models import Message, Room, Topic
-from django.db.models import Count
+from django.db.models import Count, Q
 import bleach
 
 # Get logged in User
@@ -180,6 +180,10 @@ class RoomDetailMessageCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk):
+        if not pk:
+            return Response({
+                "message": "Room ID is required to get room details."
+            }, status=status.HTTP_400_BAD_REQUEST)
         room = get_object_or_404(
             Room.objects.select_related(
                 "topic", "owner").prefetch_related("participants"), id=pk
@@ -199,6 +203,10 @@ class RoomDetailMessageCreateAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
+        if not pk:
+            return Response({
+                "message": "Message ID is required to create message."
+            }, status=status.HTTP_400_BAD_REQUEST)
         room = get_object_or_404(Room, id=pk)
         user = request.user
         body = request.data.get("body", "").strip()
@@ -244,3 +252,64 @@ class RoomDetailMessageCreateAPIView(APIView):
         return Response({
             "message": "Message deleted successfully"
         }, status=status.HTTP_204_NO_CONTENT)
+
+
+# Homepage details
+class HomePageAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+
+        q = request.GET.get("q", "").strip()
+
+        rooms = Room.objects.filter(
+            Q(topic__topic_name__icontains=q) |
+            Q(room_name__icontains=q) |
+            Q(room_description__icontains=q)
+        ).select_related("topic").only("id", "room_name", "room_description", "topic")[0:10]
+
+        topics = (Topic.objects.annotate(room_count=Count(
+            "room_topic")).order_by("-room_count")[0:5])
+
+        messages = Message.objects.filter(
+            Q(room__topic__topic_name__icontains=q)
+        ).select_related("owner", "room").only("id", "body", "room_id", "owner_id", "created_at")[0:10]
+
+        data = {
+            "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
+            "topics": TopicSerializer(topics, many=True).data,
+            "topics_count": Topic.objects.count(),
+            "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
+        }
+
+        return Response({
+            "message": "Homepage detials retrieve successfully.",
+            "data": data,
+        }, status=status.HTTP_200_OK)
+
+
+# UserProfile
+class UserProfileAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk=None):
+        if not pk:
+            return Response({
+                "message": "User ID is required to get user profile."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        user_details = get_object_or_404(User, id=pk)
+        rooms = user_details.room_owner.all()
+        messages = user_details.message_owner.all()[:8]
+        topics = Topic.objects.annotate(room_count=Count(
+            "room_topic")).order_by("-room_count")[:5]
+        data = {
+            "user": UserSerializer(user_details, context={"request": request}).data,
+            "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
+            "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
+            "topics": TopicSerializer(topics, many=True).data,
+            "topics_count": Topic.objects.count(),
+        }
+        return Response({
+            "message": "User profile retrieve successfully",
+            "data": data,
+        }, status=status.HTTP_200_OK)
