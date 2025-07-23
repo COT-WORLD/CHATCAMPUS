@@ -72,3 +72,24 @@ class Room(models.Model):
 
     def __str__(self):
         return self.room_name
+
+
+# Message Model
+class Message(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE,
+                              null=False, blank=False, related_name="message_owner")
+    room = models.ForeignKey(Room, on_delete=models.CASCADE,
+                             null=False, blank=False, related_name="room_message")
+    body = models.TextField(gettext_lazy(
+        "message body"), null=False, blank=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["room_id"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        return self.body[0:50]
