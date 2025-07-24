@@ -1,6 +1,5 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView, TokenRefreshView
-
 from .views import HomePageAPIView, RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView
 
 urlpatterns = [

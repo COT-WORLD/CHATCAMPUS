@@ -1,6 +1,3 @@
-from email import message
-from functools import partial
-from multiprocessing import context
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -164,13 +161,13 @@ class TopicListAPIView(APIView):
     def get(self, request):
         q = self.request.GET.get("q", "")
         if q:
-            topics = Topic.objects.filter(name__icontains=q).annotate(
+            topics = Topic.objects.filter(topic_name__icontains=q).annotate(
                 room_count=Count('room_topic')).order_by('-room_count')
         else:
             topics = Topic.objects.all().annotate(room_count=Count('room_topic'))
         serializer = TopicSerializer(topics, many=True)
         return Response({
-            "message": "Topic retrieve suceessfully",
+            "message": "Topics retrieve successfully",
             "topic": serializer.data
         }, status=status.HTTP_200_OK)
 
@@ -191,15 +188,13 @@ class RoomDetailMessageCreateAPIView(APIView):
         messages = room.room_message.select_related(
             "owner").order_by("created_at")
         participants = room.participants.all()
-        data = {
+
+        return Response({
+            "message": "Room details retrieve successfully",
             "room": RoomSerializer(room, context={"request": request}).data,
             "messages": MessageSerializer(messages, many=True, context={"request": request}).data,
             "participants": UserSerializer(participants, many=True, context={"request": request}).data,
             "message_count": messages.count()
-        }
-        return Response({
-            "message": "Room details retrieve successfully",
-            "data": data,
         }, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
@@ -275,16 +270,12 @@ class HomePageAPIView(APIView):
             Q(room__topic__topic_name__icontains=q)
         ).select_related("owner", "room").only("id", "body", "room_id", "owner_id", "created_at")[0:10]
 
-        data = {
+        return Response({
+            "message": "Homepage detials retrieve successfully.",
             "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
             "topics": TopicSerializer(topics, many=True).data,
             "topics_count": Topic.objects.count(),
             "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
-        }
-
-        return Response({
-            "message": "Homepage detials retrieve successfully.",
-            "data": data,
         }, status=status.HTTP_200_OK)
 
 
@@ -302,14 +293,12 @@ class UserProfileAPIView(APIView):
         messages = user_details.message_owner.all()[:8]
         topics = Topic.objects.annotate(room_count=Count(
             "room_topic")).order_by("-room_count")[:5]
-        data = {
+
+        return Response({
+            "message": "User profile retrieve successfully",
             "user": UserSerializer(user_details, context={"request": request}).data,
             "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
             "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
             "topics": TopicSerializer(topics, many=True).data,
             "topics_count": Topic.objects.count(),
-        }
-        return Response({
-            "message": "User profile retrieve successfully",
-            "data": data,
         }, status=status.HTTP_200_OK)

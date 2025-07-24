@@ -8,17 +8,23 @@ User = get_user_model()
 
 
 class UserLoginJWTViewTestCase(APITestCase):
-    def setUp(self):
-        self.login_url = reverse("token_obtain_pair")
+    USER_DATA = {
+        "email": "john@example.com",
+        "password": "securepass123",
+    }
 
-        self.user = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
             email="john@example.com",
             password="securepass123",
             first_name="John",
             last_name="Wick",
         )
 
+    def setUp(self):
         self.client = APIClient()
+        self.login_url = reverse("token_obtain_pair")
 
     def get_token_for_user(self, user=None):
         if user is None:
@@ -30,19 +36,22 @@ class UserLoginJWTViewTestCase(APITestCase):
         }
 
     def test_user_login_success(self):
-        response = self.client.post(self.login_url, {
-            "email": "john@example.com",
-            "password": "securepass123",
-        })
+        response = self.client.post(self.login_url, self.USER_DATA)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
 
-    def test_user_logi_wrong_password(self):
-        response = self.client.post(self.login_url, {
-            "email": "john@example.com",
-            "password": "wrongpassword",
-        })
+    def test_user_login_wrong_email(self):
+        self.USER_DATA["email"] = "james@example.com"
+        response = self.client.post(self.login_url, self.USER_DATA)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn("detail", response.data)
+        self.assertEqual(
+            response.data["detail"], "No active account found with the given credentials")
+
+    def test_user_login_wrong_password(self):
+        self.USER_DATA["password"] = "wrongpassword"
+        response = self.client.post(self.login_url, self.USER_DATA)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("detail", response.data)
         self.assertEqual(
