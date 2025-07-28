@@ -13,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id", "first_name", "last_name", "email",
                   "password", "avatar", "bio", "last_login"]
         extra_kwargs = {
-            "password": {"write_only": True, "required": True},
+            "password": {"write_only": True, "required": False},
             "avatar": {"required": False, "allow_null": True},
         }
 
@@ -47,7 +47,8 @@ class UserSerializer(serializers.ModelSerializer):
         if hasattr(value, "file"):
             try:
                 image = Image.open(value)
-                image.varify()
+                image.verify()
+                value.file.seek(0)
             except Exception:
                 raise serializers.ValidationError(
                     "Uploaded file is not a valid image.")

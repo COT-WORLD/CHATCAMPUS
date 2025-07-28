@@ -228,6 +228,7 @@ class RoomDetailMessageCreateAPIView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
+# Message delete
 class MessageDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -252,9 +253,8 @@ class MessageDeleteAPIView(APIView):
             "message": "Message deleted successfully"
         }, status=status.HTTP_204_NO_CONTENT)
 
+
 # Homepage details
-
-
 class HomePageAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

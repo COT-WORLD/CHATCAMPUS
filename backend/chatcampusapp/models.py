@@ -14,7 +14,7 @@ class User(AbstractUser, PermissionsMixin):
     last_name = models.CharField(gettext_lazy(
         "last name"), max_length=150, null=True, blank=True)
     bio = models.TextField(gettext_lazy("bio"), null=True, blank=True)
-    avatar = models.FileField(gettext_lazy(
+    avatar = models.ImageField(gettext_lazy(
         "avatar"), upload_to="images/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

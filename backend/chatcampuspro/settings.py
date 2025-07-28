@@ -35,6 +35,8 @@ ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS",
 # Application definition
 
 INSTALLED_APPS = [
+    'cloudinary_storage',
+    'cloudinary',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,8 +49,6 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'social_django',
     'drf_social_oauth2',
-    'cloudinary',
-    'cloudinary_storage',
     'corsheaders',
 ]
 
@@ -168,19 +168,6 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = config(
 )
 AUTH_USER_MODEL = 'chatcampusapp.User'
 
-# File storage settings - changed to cloudinary
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": config("CLOUDINARY_NAME"),
-    "API_KEY": config("CLOUDINARY_API_KEY"),
-    "API_SECRET": config("CLOUDINARY_API_SECRET"),
-}
-
-# Media storage settings
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
 # CORS settings
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = config(
@@ -188,3 +175,13 @@ CORS_ALLOWED_ORIGINS = config(
     default='http://localhost:5173',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": config("CLOUDINARY_NAME"),
+    "API_KEY": config("CLOUDINARY_API_KEY"),
+    "API_SECRET": config("CLOUDINARY_API_SECRET"),
+}
+# File storage settings - changed to cloudinary
+STORAGES = {
+    "default": {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}

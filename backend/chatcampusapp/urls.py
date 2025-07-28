@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView, TokenRefreshView
-from .views import HomePageAPIView, MessageDeleteAPIView, RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView
+from .views import HomePageAPIView, MessageDeleteAPIView, RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView, UserProfileAPIView
 
 urlpatterns = [
     path('sso-auth/', include('drf_social_oauth2.urls', namespace='drf')),
