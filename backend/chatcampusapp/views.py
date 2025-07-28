@@ -227,9 +227,13 @@ class RoomDetailMessageCreateAPIView(APIView):
             "messages": MessageSerializer(message).data
         }, status=status.HTTP_201_CREATED)
 
+
+class MessageDeleteAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def delete(self, request, pk: None):
         """
-        Delete a room.
+        Delete a message.
         """
         if not pk:
             return Response({
@@ -248,8 +252,9 @@ class RoomDetailMessageCreateAPIView(APIView):
             "message": "Message deleted successfully"
         }, status=status.HTTP_204_NO_CONTENT)
 
-
 # Homepage details
+
+
 class HomePageAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
