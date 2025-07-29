@@ -1,4 +1,5 @@
 asgiref==3.9.1
+attrs==25.3.0
 bleach==6.2.0
 certifi==2025.7.14
 cffi==1.17.1
@@ -15,10 +16,15 @@ django-cors-headers==4.7.0
 django-oauth-toolkit==3.0.1
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.1
+drf-spectacular==0.28.0
 dummy-text-generator==0.1.0
 Faker==37.4.2
+gunicorn==23.0.0
 idna==3.10
+inflection==0.5.1
 iniconfig==2.1.0
+jsonschema==4.25.0
+jsonschema-specifications==2025.4.1
 jwcrypto==1.5.6
 oauthlib==3.3.1
 packaging==25.0
@@ -31,11 +37,15 @@ Pygments==2.19.2
 PyJWT==2.10.1
 python-decouple==3.8
 python3-openid==3.2.0
+PyYAML==6.0.2
+referencing==0.36.2
 requests==2.32.4
 requests-oauthlib==2.0.0
+rpds-py==0.26.0
 six==1.17.0
 sqlparse==0.5.3
 typing_extensions==4.14.1
 tzdata==2025.2
+uritemplate==4.2.0
 urllib3==2.5.0
 webencodings==0.5.1
