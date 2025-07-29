@@ -6,6 +6,7 @@ from faker import Faker
 import random
 from dummy_text_generator import generate_sentence
 from decouple import config
+import sys
 
 fake = Faker()
 User = get_user_model()
@@ -22,6 +23,9 @@ FIRST_NAMES = [
 
 @receiver(post_migrate)
 def initialize_project_data(sender, **kwargs):
+    if 'test' in sys.argv:
+        print("Skipping data seeding during test run.")
+        return
     seed_initial_data()
 
 

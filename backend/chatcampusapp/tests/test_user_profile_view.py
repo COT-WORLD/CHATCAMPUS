@@ -43,7 +43,8 @@ class UserProfileViewAPITestCase(APITestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user_profile_url = reverse("user-profile", kwargs={"pk": "1"})
+        self.user_profile_url = reverse(
+            "user-profile", kwargs={"pk": self.user.id})
 
     def authenticate(self, user=None):
         self.client.force_authenticate(user=user or self.user)

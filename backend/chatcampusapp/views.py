@@ -165,9 +165,10 @@ class TopicListAPIView(APIView):
         q = self.request.GET.get("q", "")
         if q:
             topics = Topic.objects.filter(topic_name__icontains=q).annotate(
-                room_count=Count('room_topic')).order_by('-room_count')
+                room_count=Count('room_topic')).order_by('-room_count', 'topic_name')
         else:
-            topics = Topic.objects.all().annotate(room_count=Count('room_topic'))
+            topics = Topic.objects.all().annotate(
+                room_count=Count('room_topic')).order_by('-room_count', 'topic_name')
         serializer = TopicSerializer(topics, many=True)
         return Response({
             "message": "Topics retrieve successfully",
