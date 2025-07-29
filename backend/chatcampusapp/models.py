@@ -1,12 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
 from .managers import CustomUserManager
 from django.utils.translation import gettext_lazy
 
 
 # Custom User model with AbstractUser, PermissionsMixin and CustomUserManager
-class User(AbstractUser, PermissionsMixin):
-    username = None
+class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(gettext_lazy(
         "email address"), unique=True, null=False, blank=False)
     first_name = models.CharField(gettext_lazy(
@@ -32,8 +32,6 @@ class User(AbstractUser, PermissionsMixin):
 class Topic(models.Model):
     topic_name = models.CharField(gettext_lazy(
         "topic name"), max_length=150, blank=False, null=False, unique=True)
-    creator = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name='topics')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

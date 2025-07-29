@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView, TokenRefreshView
-from .views import GoogleAuthAPIView, HomePageAPIView, MessageDeleteAPIView, RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView, UserProfileAPIView
+from .views import GoogleAuthAPIView, HomePageAPIView, MessageDeleteAPIView, RoomCreateAPIView, RoomDetailMessageCreateAPIView, RoomUpdateRetrieveDeleteAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView, UserProfileAPIView
 
 urlpatterns = [
     path("auth/social/google/",
@@ -10,9 +10,9 @@ urlpatterns = [
     path("auth/token/logout/", TokenBlacklistView.as_view(), name="token_blacklist"),
     path("auth/register/", UserCreateAPIView.as_view(), name="register"),
     path("user/me/", UserRetrieveUpdateAPIView.as_view(), name="user-profile"),
-    path("rooms/", RoomTopicCreateUpdateRetrieveDeleteListAPIView.as_view(),
+    path("rooms/", RoomCreateAPIView.as_view(),
          name="room-topic-create-list"),
-    path("rooms/<int:pk>/", RoomTopicCreateUpdateRetrieveDeleteListAPIView.as_view(),
+    path("rooms/<int:pk>/", RoomUpdateRetrieveDeleteAPIView.as_view(),
          name="room-get-update-delete"),
     path("topics/", TopicListAPIView.as_view(), name="topic-list"),
     path("roomDetails/<int:pk>/", RoomDetailMessageCreateAPIView.as_view(),

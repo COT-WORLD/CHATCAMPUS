@@ -17,6 +17,12 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar": {"required": False, "allow_null": True},
         }
 
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists.")
+        return value
+
     # validate first name
     def validate_first_name(self, value):
         if '<' in value or '>' in value:
@@ -83,8 +89,8 @@ class TopicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Topic
-        fields = ["id", "topic_name", "creator", "room_count"]
-        read_only_fields = ["creator", "room_count"]
+        fields = ["id", "topic_name", "room_count"]
+        read_only_fields = ["room_count"]
 
     def validate(self, data):
         if self.instance and "topic_name" not in data:
@@ -142,7 +148,6 @@ class RoomSerializer(serializers.ModelSerializer):
         topic_name = data.pop("topic").strip()
         topic, _ = Topic.objects.get_or_create(
             topic_name=topic_name,
-            defaults={"creator": owner}
         )
         data["topic"] = topic
 
@@ -189,3 +194,64 @@ class MessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Message contains impersonation pattern.")
         return bleach.clean(value, tags=[], strip=True)
+
+
+class UserMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'avatar', 'first_name']
+
+
+class TopicNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Topic
+        fields = ["topic_name"]
+
+
+class RoomMinimalSerializer(serializers.ModelSerializer):
+    owner = UserMinimalSerializer(read_only=True)
+    participants_count = serializers.SerializerMethodField()
+    topic_details = TopicNameSerializer(source="topic", read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ['id', 'room_name', 'owner', 'created_at',
+                  'participants_count', 'topic_details']
+
+    def get_participants_count(self, obj):
+        return obj.participants.count()
+
+
+class RoomNameandIDSerilizer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = ['id', 'room_name']
+
+
+class MessageMinimalSerializer(serializers.ModelSerializer):
+    owner = UserMinimalSerializer(read_only=True)
+    room = RoomNameandIDSerilizer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ['id', 'body', 'created_at', 'owner', 'room']
+        read_only_fields = ['id', 'owner', 'room', 'created_at']
+
+
+class RoomProfileSerializer(serializers.ModelSerializer):
+    owner = UserMinimalSerializer(read_only=True)
+    topic_details = TopicNameSerializer(source="topic", read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ['id', 'room_name', 'room_description',
+                  'owner', 'created_at', 'topic_details']
+
+
+class MessageProfileSerializer(serializers.ModelSerializer):
+    owner = UserMinimalSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ['id', 'body', 'created_at', 'owner']
+        read_only_fields = ['id', 'owner', 'created_at']

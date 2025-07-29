@@ -24,8 +24,6 @@ class Migration(migrations.Migration):
                     blank=True, null=True, verbose_name='last login')),
                 ('is_superuser', models.BooleanField(default=False,
                  help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('date_joined', models.DateTimeField(
-                    default=django.utils.timezone.now, verbose_name='date joined')),
                 ('email', models.EmailField(max_length=254,
                  unique=True, verbose_name='email address')),
                 ('first_name', models.CharField(blank=True,
@@ -43,8 +41,6 @@ class Migration(migrations.Migration):
                  related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
             ],
             options={
-                'verbose_name': 'user',
-                'verbose_name_plural': 'users',
                 'abstract': False,
             },
         ),

@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.contrib.auth import get_user_model
-from .serializers import MessageSerializer, RoomSerializer, TopicSerializer, UserSerializer
+from .serializers import MessageMinimalSerializer, MessageProfileSerializer, MessageSerializer, RoomMinimalSerializer, RoomProfileSerializer, RoomSerializer, TopicSerializer, UserMinimalSerializer, UserSerializer
 from .models import Message, Room, Topic
 from django.db.models import Count, Q
 import bleach
@@ -25,8 +25,7 @@ class UserCreateAPIView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             return Response({
-                "message": "User created successfully",
-                "user": UserSerializer(user, context={'request': request}).data
+                "message": "User registered successfully",
             }, status=status.HTTP_201_CREATED)
         return Response({
             "message": "User registration failed",
@@ -63,14 +62,13 @@ class UserRetrieveUpdateAPIView(APIView):
 
 
 # Create Room and Topic create, list, get, update and delete
-class RoomTopicCreateUpdateRetrieveDeleteListAPIView(APIView):
+class RoomUpdateRetrieveDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, pk=None):
+    def get(self, pk=None):
         """
         GET:
         - If `pk` is provided: retrieve a single room.
-        - Else: list all rooms for the current user.
         """
         if pk:
             room = get_object_or_404(Room, pk=pk)
@@ -79,30 +77,6 @@ class RoomTopicCreateUpdateRetrieveDeleteListAPIView(APIView):
                 "message": "Room retrieve successfully",
                 "room": serializer.data
             }, status=status.HTTP_200_OK)
-        # list all rooms
-        rooms = Room.objects.all()
-        serializer = RoomSerializer(rooms, many=True)
-        return Response({
-            "message": "Rooms retrieve successfully",
-            "room": serializer.data
-        }, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        """
-        Create a new room.
-        """
-        serializer = RoomSerializer(
-            data=request.data, context={"request": request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "message": "Room created successfully",
-                "room": serializer.data
-            }, status=status.HTTP_201_CREATED)
-        return Response({
-            "message": "Room creation failed",
-            "errors": serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, pk=None):
         """
@@ -157,6 +131,27 @@ class RoomTopicCreateUpdateRetrieveDeleteListAPIView(APIView):
         }, status=status.HTTP_204_NO_CONTENT)
 
 
+class RoomCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        Create a new room.
+        """
+        serializer = RoomSerializer(
+            data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Room created successfully",
+                "room": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "message": "Room creation failed",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
 # Topic list
 class TopicListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -195,9 +190,9 @@ class RoomDetailMessageCreateAPIView(APIView):
 
         return Response({
             "message": "Room details retrieve successfully",
-            "room": RoomSerializer(room, context={"request": request}).data,
-            "messages": MessageSerializer(messages, many=True, context={"request": request}).data,
-            "participants": UserSerializer(participants, many=True, context={"request": request}).data,
+            "room": RoomProfileSerializer(room, context={"request": request}).data,
+            "messages": MessageProfileSerializer(messages, many=True, context={"request": request}).data,
+            "participants": UserMinimalSerializer(participants, many=True, context={"request": request}).data,
             "message_count": messages.count()
         }, status=status.HTTP_200_OK)
 
@@ -280,10 +275,10 @@ class HomePageAPIView(APIView):
 
         return Response({
             "message": "Homepage detials retrieve successfully.",
-            "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
+            "rooms": RoomMinimalSerializer(rooms, many=True, context={"request": request}).data,
             "topics": TopicSerializer(topics, many=True).data,
             "topics_count": Topic.objects.count(),
-            "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
+            "room_messages": MessageMinimalSerializer(messages, many=True, context={"request": request}).data,
         }, status=status.HTTP_200_OK)
 
 
@@ -304,7 +299,7 @@ class UserProfileAPIView(APIView):
 
         return Response({
             "message": "User profile retrieve successfully",
-            "user": UserSerializer(user_details, context={"request": request}).data,
+            "user": UserMinimalSerializer(user_details, context={"request": request}).data,
             "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
             "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
             "topics": TopicSerializer(topics, many=True).data,
