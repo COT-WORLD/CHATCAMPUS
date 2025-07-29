@@ -7,6 +7,9 @@ from .serializers import MessageSerializer, RoomSerializer, TopicSerializer, Use
 from .models import Message, Room, Topic
 from django.db.models import Count, Q
 import bleach
+from rest_framework_simplejwt.tokens import RefreshToken
+import requests
+from decouple import config
 
 # Get logged in User
 User = get_user_model()
@@ -259,7 +262,6 @@ class HomePageAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-
         q = request.GET.get("q", "").strip()
 
         rooms = Room.objects.filter(
@@ -307,3 +309,47 @@ class UserProfileAPIView(APIView):
             "topics": TopicSerializer(topics, many=True).data,
             "topics_count": Topic.objects.count(),
         }, status=status.HTTP_200_OK)
+
+
+# CustomConvertToken
+class GoogleAuthAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        access_token = request.data.get('access_token')
+        if not access_token:
+            return Response({"error": "No access token provided."}, status=400)
+
+        # 1. Get user info from Google
+        userinfo_url = f"{config("GOOGLE_AUTH_URI")}{access_token}"
+        resp = requests.get(userinfo_url)
+        if resp.status_code != 200:
+            return Response({"error": "Could not retrieve user info from Google"}, status=400)
+
+        user_data = resp.json()
+        email = user_data.get('email')
+        first_name = user_data.get('given_name', '')
+        last_name = user_data.get('family_name', '')
+
+        if not email:
+            return Response({"error": "Google account has no email"}, status=400)
+
+        # 2. Create or fetch user in your DB
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={'first_name': first_name, 'last_name': last_name}
+        )
+        # (Optional: update names on each login)
+        if not created:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save()
+
+        # 3. Generate tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "email": user.email,
+            "first_name": user.first_name,
+        })

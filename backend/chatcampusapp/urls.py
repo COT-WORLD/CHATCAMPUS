@@ -1,9 +1,10 @@
-from django.urls import path, include
+from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView, TokenRefreshView
-from .views import HomePageAPIView, MessageDeleteAPIView, RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView, UserProfileAPIView
+from .views import GoogleAuthAPIView, HomePageAPIView, MessageDeleteAPIView, RoomDetailMessageCreateAPIView, RoomTopicCreateUpdateRetrieveDeleteListAPIView, TopicListAPIView, UserProfileAPIView, UserRetrieveUpdateAPIView, UserCreateAPIView, UserProfileAPIView
 
 urlpatterns = [
-    path('sso-auth/', include('drf_social_oauth2.urls', namespace='drf')),
+    path("auth/social/google/",
+         GoogleAuthAPIView.as_view(), name="google_login"),
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/token/logout/", TokenBlacklistView.as_view(), name="token_blacklist"),
