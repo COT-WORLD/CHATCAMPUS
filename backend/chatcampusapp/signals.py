@@ -100,14 +100,26 @@ def add_messages_and_participants(rooms, users):
     through_entries = []
     messages = []
 
-    for room in rooms:
-        participants = set([room.owner])
+    total_users_count = len(users)
 
-        num_other_partcipants = random.randint(1, 10)
+    for room in rooms:
+        available_potential_participants = [
+            u for u in users if u != room.owner]
+        num_available_potential_participants = len(
+            available_potential_participants)
+
+        max_participants_to_add = min(num_available_potential_participants, 10)
+
+        if max_participants_to_add <= 0:
+            num_other_partcipants = 0
+        else:
+            num_other_partcipants = random.randint(1, max_participants_to_add)
+
         other_participants = random.sample(
-            [u for u in users if u != room.owner],
+            available_potential_participants,
             k=num_other_partcipants
         )
+        participants = set([room.owner])
         participants.update(other_participants)
 
         host_message = generate_sentence(
