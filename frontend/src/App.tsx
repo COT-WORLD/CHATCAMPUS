@@ -1,9 +1,27 @@
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
+import { AuthProvider } from "./context/AuthContext";
+import Layout from "./pages/Layout";
+import GuestRoute from "./pages/GuestRoute";
+import ProtectedRoute from "./pages/ProtectedRoute";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 function App() {
   return (
-    <>
-      <h1 className="bg-amber-400">Chat Room</h1>
-    </>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route element={<GuestRoute />}>
+              <Route path="login" element={<Login />} />
+            </Route>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Dashboard />} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
