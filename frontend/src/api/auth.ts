@@ -13,8 +13,7 @@ export const login = (data: LoginData) => api.post("auth/token/", data);
 export const refreshToken = (refresh: string) =>
   api.post("auth/token/refresh/", { refresh });
 
-export const register = (data: RegisterData) =>
-  api.post("auth/register/", data);
+export const signup = (data: RegisterData) => api.post("auth/register/", data);
 
 export const logout = (refresh: string) =>
   api.post("auth/token/logout/", { refresh });
