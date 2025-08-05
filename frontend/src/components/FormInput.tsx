@@ -46,7 +46,7 @@ const FormInput: React.FC<FormInputProps> = ({
         aria-invalid={errors?.[name] ? "true" : "false"}
       />
       {errors?.[name]?.message && typeof errors[name]?.message === "string" && (
-        <span role="alert" className="text-red-500 text-sm mt-1 block">
+        <span role="alert" className="text-[#b2bdbd] text-sm mt-1 block">
           {errors[name]?.message}
         </span>
       )}

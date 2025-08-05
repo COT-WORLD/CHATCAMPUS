@@ -7,23 +7,28 @@ import ProtectedRoute from "./pages/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route element={<GuestRoute />}>
-              <Route path="login" element={<Login />} />
-              <Route path="signup" element={<Register />} />
+    <GoogleOAuthProvider clientId={clientId}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route element={<GuestRoute />}>
+                <Route path="login" element={<Login />} />
+                <Route path="signup" element={<Register />} />
+              </Route>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Dashboard />} />
+              </Route>
             </Route>
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Dashboard />} />
-            </Route>
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

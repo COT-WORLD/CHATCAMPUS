@@ -1,11 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { registerSchema } from "../schemas/register.schema";
 import z from "zod";
 import { signup } from "../api/auth";
 import FormInput from "../components/FormInput";
 import { Link } from "react-router-dom";
+import Toast from "../components/Toast";
+import { parseApiErrors } from "../utils/apiErrors";
 
 const Register: React.FC = () => {
   const {
@@ -16,13 +18,20 @@ const Register: React.FC = () => {
     resolver: zodResolver(registerSchema),
   });
 
+  const [toastError, setToastError] = useState<string[] | null>(null);
+  const [toastSuccess, setToastSuccess] = useState<string | null>(null);
+
   const onSubmit = async (data: z.infer<typeof registerSchema>) => {
     try {
       const response = await signup(data);
-      alert(response.data);
-      window.location.href = "/login";
+      if (response.data?.message) {
+        setToastSuccess("User registered successfully");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        window.location.href = "/login";
+      }
     } catch (error: any) {
-      alert(error.response?.data?.detail || "Registration Failed");
+      const apiErrorMessages = parseApiErrors(error.response?.data);
+      setToastError(apiErrorMessages);
     }
   };
 
@@ -92,20 +101,20 @@ const Register: React.FC = () => {
             <i className="fas fa-lock"></i>
             Register
           </button>
-          {/* {error && (
+          {toastError && (
             <Toast
-              message={error}
-              onClose={() => setError(null)}
+              message={toastError}
+              onClose={() => setToastError(null)}
               variant="error"
             />
           )}
-          {success && (
+          {toastSuccess && (
             <Toast
-              message={success}
-              onClose={() => setSuccess(null)}
+              message={toastSuccess}
+              onClose={() => setToastSuccess(null)}
               variant="success"
             />
-          )} */}
+          )}
         </form>
         <p className="text-center mt-4 text-[#adb5bd] text-sm">
           Already signed up

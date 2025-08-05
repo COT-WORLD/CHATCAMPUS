@@ -68,13 +68,14 @@ const Header = () => {
                     to={`/editProfile/${user.id}`}
                     className="dropdown-link flex items-center px-3 py-2 hover:bg-gray-600"
                   >
-                    <i className="fas fa-tools me-1 mr-2"></i>Settings
+                    <i className="fas fa-tools mr-2"></i>Settings
                   </Link>
                   <button
-                    className="dropdown-link flex items-center px-3 py-2 hover:bg-gray-600"
+                    type="button"
+                    className="dropdown-link flex items-center px-3 py-2 hover:bg-gray-600 w-full text-left"
                     onClick={logout}
                   >
-                    <i className="fas fa-sign-out-alt me-1 mr-2"></i>Logout
+                    <i className="fas fa-sign-out-alt mr-2"></i>Logout
                   </button>
                 </div>
               )}

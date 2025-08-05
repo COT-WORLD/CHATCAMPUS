@@ -17,3 +17,5 @@ export const signup = (data: RegisterData) => api.post("auth/register/", data);
 
 export const logout = (refresh: string) =>
   api.post("auth/token/logout/", { refresh });
+
+export const ssoLogin = (data: any) => api.post("auth/social/google/", data);
