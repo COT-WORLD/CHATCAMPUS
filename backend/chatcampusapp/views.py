@@ -167,7 +167,7 @@ class TopicListAPIView(APIView):
         serializer = TopicSerializer(topics, many=True)
         return Response({
             "message": "Topics retrieve successfully",
-            "topic": serializer.data
+            "topics": serializer.data
         }, status=status.HTTP_200_OK)
 
 
