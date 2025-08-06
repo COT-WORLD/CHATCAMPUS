@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import Topics from "./pages/Topics";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
               </Route>
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/topics" element={<Topics />} />
               </Route>
             </Route>
           </Routes>
