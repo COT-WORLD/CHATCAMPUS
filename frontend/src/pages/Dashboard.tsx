@@ -1,10 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import TopicsSideBar from "../components/TopicsSideBar";
-import RoomDetailsCard from "../components/RoomdetailsCard";
+import RoomDetailsCard from "../components/RoomDetailsCard";
 import ActivityCard from "../components/ActivityCard";
 import { useEffect, useState } from "react";
 import type { Topic } from "../types/topic.types";
-import type { Room } from "../types/Room.types";
+import type { Room } from "../types/room.types";
 import type { Message } from "../types/message.types";
 import { dashboardDeatils } from "../api/main";
 
