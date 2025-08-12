@@ -65,11 +65,12 @@ class UserRetrieveUpdateAPIView(APIView):
 class RoomUpdateRetrieveDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, pk=None):
+    def get(self, request, *args, **kwargs):
         """
         GET:
         - If `pk` is provided: retrieve a single room.
         """
+        pk = kwargs["pk"]
         if pk:
             room = get_object_or_404(Room, pk=pk)
             serializer = RoomSerializer(room)
@@ -78,11 +79,12 @@ class RoomUpdateRetrieveDeleteAPIView(APIView):
                 "room": serializer.data
             }, status=status.HTTP_200_OK)
 
-    def patch(self, request, pk=None):
+    def patch(self, request, *args, **kwargs):
         """
         Partially update an existing room.
         Only the owner can update the room.
         """
+        pk = kwargs["pk"]
         if not pk:
             return Response({
                 "message": "Room ID is required for the update."
@@ -109,10 +111,11 @@ class RoomUpdateRetrieveDeleteAPIView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk=None):
+    def delete(self, request, *args, **kwargs):
         """
         Delete a room.
         """
+        pk = kwargs["pk"]
         if not pk:
             return Response({
                 "message": "Room ID is required for delete."
@@ -175,7 +178,8 @@ class TopicListAPIView(APIView):
 class RoomDetailMessageCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, pk):
+    def get(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
         if not pk:
             return Response({
                 "message": "Room ID is required to get room details."
@@ -196,7 +200,8 @@ class RoomDetailMessageCreateAPIView(APIView):
             "message_count": messages.count()
         }, status=status.HTTP_200_OK)
 
-    def post(self, request, pk):
+    def post(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
         if not pk:
             return Response({
                 "message": "Message ID is required to create message."
@@ -231,10 +236,11 @@ class RoomDetailMessageCreateAPIView(APIView):
 class MessageDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request, pk: None):
+    def delete(self, request, *args, **kwargs):
         """
         Delete a message.
         """
+        pk = kwargs["pk"]
         if not pk:
             return Response({
                 "message": "Message Id is required to delete."
@@ -286,7 +292,8 @@ class HomePageAPIView(APIView):
 class UserProfileAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request, pk=None):
+    def get(self, request, *args, **kwargs):
+        pk = kwargs["pk"]
         if not pk:
             return Response({
                 "message": "User ID is required to get user profile."
