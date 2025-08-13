@@ -11,6 +11,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import Topics from "./pages/Topics";
 import RoomManage from "./pages/RoomManage";
 import RoomDetail from "./pages/RoomDetail";
+import UserProfile from "./pages/UserProfile";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/createRoom" element={<RoomManage />} />
                 <Route path="/updateRoom/:id" element={<RoomManage />} />
                 <Route path="/roomDetails/:id" element={<RoomDetail />} />
+                <Route path="/userProfile/:id" element={<UserProfile />} />
               </Route>
             </Route>
           </Routes>
