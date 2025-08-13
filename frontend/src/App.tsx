@@ -12,6 +12,7 @@ import Topics from "./pages/Topics";
 import RoomManage from "./pages/RoomManage";
 import RoomDetail from "./pages/RoomDetail";
 import UserProfile from "./pages/UserProfile";
+import EditUserProfile from "./pages/editUserProfile";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/updateRoom/:id" element={<RoomManage />} />
                 <Route path="/roomDetails/:id" element={<RoomDetail />} />
                 <Route path="/userProfile/:id" element={<UserProfile />} />
+                <Route path="/editProfile/:id" element={<EditUserProfile />} />
               </Route>
             </Route>
           </Routes>

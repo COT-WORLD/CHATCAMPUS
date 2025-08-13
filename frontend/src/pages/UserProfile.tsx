@@ -31,7 +31,7 @@ const UserProfile = () => {
         setRoomMessages(response?.data.room_messages);
         setTopicsCount(response?.data.topics_count);
       } catch (error) {
-        console.log("Error while fecthing user profile details", error);
+        console.error("Error while fecthing user profile details", error);
       }
     };
     fetchUserProfileDetails();
