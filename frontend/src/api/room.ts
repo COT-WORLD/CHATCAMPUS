@@ -11,3 +11,7 @@ export const getRoomDetailsById = (id: string) => api.get(`rooms/${id}/`);
 export const createRoom = (data: RoomCreateData) => api.post("rooms/", data);
 export const updateRoomById = (id: string, data: RoomCreateData) =>
   api.patch(`rooms/${id}/`, data);
+
+export const deleteRoom = (id: number) => api.delete(`rooms/${id}/`);
+
+export const getRoomDetail = (id: string) => api.get(`roomDetails/${id}/`);
