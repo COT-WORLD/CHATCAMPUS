@@ -12,7 +12,7 @@ import Topics from "./pages/Topics";
 import RoomManage from "./pages/RoomManage";
 import RoomDetail from "./pages/RoomDetail";
 import UserProfile from "./pages/UserProfile";
-import EditUserProfile from "./pages/editUserProfile";
+import EditUserProfile from "./pages/EditUserProfile";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function App() {
