@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import type { UserType } from "../types/user.types";
-import type { Room } from "../types/room.types";
-import type { Message } from "../types/message.types";
+import type { UserType } from "../types/User.types";
+import type { Room } from "../types/Room.types";
+import type { Message } from "../types/Message.types";
 import defaultAvatar from "../assets/avatar.svg";
 import { formatDistanceToNow } from "date-fns";
 import ConfirmModal from "../components/ConfirmModal";

@@ -1,5 +1,5 @@
-import type { Room } from "./room.types";
-import type { UserType } from "./user.types";
+import type { Room } from "./Room.types";
+import type { UserType } from "./User.types";
 
 export interface Message {
   id: number;

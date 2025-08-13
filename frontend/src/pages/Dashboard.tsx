@@ -3,9 +3,9 @@ import TopicsSideBar from "../components/TopicsSideBar";
 import RoomDetailsCard from "../components/RoomDetailsCard";
 import ActivityCard from "../components/ActivityCard";
 import { useEffect, useState } from "react";
-import type { Topic } from "../types/topic.types";
-import type { Room } from "../types/room.types";
-import type { Message } from "../types/message.types";
+import type { Topic } from "../types/Topic.types";
+import type { Room } from "../types/Room.types";
+import type { Message } from "../types/Message.types";
 import { dashboardDeatils } from "../api/main";
 
 const Dashboard = () => {

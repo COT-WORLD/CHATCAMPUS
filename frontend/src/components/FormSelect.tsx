@@ -1,5 +1,5 @@
 import React from "react";
-import type { Topic } from "../types/topic.types";
+import type { Topic } from "../types/Topic.types";
 import type { FieldErrors } from "react-hook-form";
 
 interface FormSelectProps {

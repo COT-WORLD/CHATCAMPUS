@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import type { Room } from "../types/room.types";
+import type { Room } from "../types/Room.types";
 import type React from "react";
 import defaultAvatar from "../assets/avatar.svg";
 interface RoomDetailsCardProps {

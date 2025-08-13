@@ -4,7 +4,7 @@ import FormInput from "../components/FormInput";
 import Toast from "../components/Toast";
 import { useEffect, useState } from "react";
 import FormSelect from "../components/FormSelect";
-import type { Topic } from "../types/topic.types";
+import type { Topic } from "../types/Topic.types";
 import { topicsList } from "../api/main";
 import { createRoom, getRoomDetailsById, updateRoomById } from "../api/room";
 import z from "zod";

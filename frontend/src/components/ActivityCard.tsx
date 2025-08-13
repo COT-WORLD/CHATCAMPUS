@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { Message } from "../types/message.types";
+import type { Message } from "../types/Message.types";
 import type React from "react";
 import { formatDistanceToNow } from "date-fns";
 import defaultAvatar from "../assets/avatar.svg";

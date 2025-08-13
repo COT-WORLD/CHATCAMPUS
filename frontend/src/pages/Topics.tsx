@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Topic } from "../types/topic.types";
+import type { Topic } from "../types/Topic.types";
 import { topicsList } from "../api/main";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 

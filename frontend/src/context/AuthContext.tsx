@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import type { UserType } from "../types/user.types";
+import type { UserType } from "../types/User.types";
 import { login as apiLogin, logout as apiLogout } from "../api/auth";
 import api from "../api/axios";
 import {

@@ -1,5 +1,5 @@
-import type { Topic } from "./topic.types";
-import type { UserType } from "./user.types";
+import type { Topic } from "./Topic.types";
+import type { UserType } from "./User.types";
 
 export interface Room {
   id: number;

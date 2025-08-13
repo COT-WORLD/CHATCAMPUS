@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { Topic } from "../types/topic.types";
+import type { Topic } from "../types/Topic.types";
 import type React from "react";
 interface TopicsSideBarProps {
   topics: Topic[];
