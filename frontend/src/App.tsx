@@ -23,8 +23,8 @@ function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route element={<GuestRoute />}>
-                <Route path="login" element={<Login />} />
-                <Route path="signup" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Register />} />
               </Route>
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<Dashboard />} />
