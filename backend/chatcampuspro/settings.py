@@ -93,9 +93,23 @@ WSGI_APPLICATION = 'chatcampuspro.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {'default': dj_database_url.parse(
-    config("EXTERNAL_DATABASE_URL"))}
+DATABASES = {
+    "default": dj_database_url.parse(
+        config("EXTERNAL_DATABASE_URL"),
+        conn_max_age=0,
+        ssl_require=True,
+    )
+}
 
+DATABASES["default"]["OPTIONS"] = {
+    "pool": {
+        "min_size": 4,
+        "max_size": 16,
+        "timeout": 10,
+        "max_lifetime": 1800,
+        "max_idle": 300,
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -225,3 +239,11 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 3600
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_SSL_REDIRECT = True
+
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    INTERNAL_IPS = ['127.0.0.1',]
+    DEBUG_TOOLBAR_CONFIG = {
+        'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+    }

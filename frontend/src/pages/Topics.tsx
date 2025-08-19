@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import type { Topic } from "../types/Topic.types";
 import { topicsList } from "../api/main";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import Loader from "../components/Loader";
 
 const Topics = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [totalTopicsCount, setTotalTopicsCount] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
   const [search, setSearch] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,12 +23,15 @@ const Topics = () => {
       return;
     }
     const fetchData = async () => {
+      setLoading(true);
       try {
         const response = await topicsList(q);
         setTopics(response.data?.topics || []);
         setTotalTopicsCount(response.data?.topics?.length || 0);
       } catch (error) {
         console.error(`Topics retriving error ${error}`);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -40,6 +45,9 @@ const Topics = () => {
       navigate(`/topics`);
     }
   };
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#2d2d39] text-[#adb5bd] font-sans">

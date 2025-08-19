@@ -10,6 +10,7 @@ import type { Topic } from "../types/Topic.types";
 import type { Room } from "../types/Room.types";
 import type { Message } from "../types/Message.types";
 import { getUserProfileDetail } from "../api/user";
+import Loader from "../components/Loader";
 
 const UserProfile = () => {
   const { id } = useParams<{ id?: string }>();
@@ -19,10 +20,12 @@ const UserProfile = () => {
   const [topicsCount, setTopicsCount] = useState<number>(0);
   const [roomsDetails, setRoomsDetails] = useState<Room[]>([]);
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchUserProfileDetails = async () => {
       if (!id) return <Navigate to="/" replace />;
+      setLoading(true);
       try {
         const response = await getUserProfileDetail(id);
         setUsers(response?.data.user);
@@ -32,6 +35,8 @@ const UserProfile = () => {
         setTopicsCount(response?.data.topics_count);
       } catch (error) {
         console.error("Error while fecthing user profile details", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchUserProfileDetails();
@@ -44,6 +49,9 @@ const UserProfile = () => {
 
   if (isLoading) return <div>Loading.....</div>;
   if (!user) return <div>Not Authenticated</div>;
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="w-full min-h-screen bg-[#2d2d39] text-[#adb5bd] font-sans">

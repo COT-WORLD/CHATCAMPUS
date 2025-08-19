@@ -3,9 +3,13 @@ import Logo from "../assets/logo.svg";
 import avatarLogo from "../assets/avatar.svg";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
+import Loader from "./Loader";
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+  if (isLoading) {
+    return <Loader />;
+  }
 
   const location = useLocation();
   const currentPath = location.pathname;

@@ -11,6 +11,7 @@ import { deleteRoom, getRoomDetail } from "../api/room";
 import { createMessageInRoom, deleteMessageInRoom } from "../api/message";
 import { parseApiErrors } from "../utils/apiErrors";
 import Toast from "../components/Toast";
+import Loader from "../components/Loader";
 
 const RoomDetail = () => {
   const { id } = useParams<{ id?: string }>();
@@ -25,6 +26,7 @@ const RoomDetail = () => {
   const [roomsDetails, setRoomsDetails] = useState<Room>();
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const isHost = user?.id === roomsDetails?.owner?.id;
 
@@ -63,6 +65,7 @@ const RoomDetail = () => {
 
   const fetchRoomDetails = async () => {
     if (!id) return <Navigate to="/" replace />;
+    setLoading(true);
     try {
       const response = await getRoomDetail(id);
       setParticipants(response?.data.participants);
@@ -70,6 +73,8 @@ const RoomDetail = () => {
       setRoomMessages(response?.data.messages);
     } catch (error) {
       console.error("Error while fetching room details", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,6 +84,9 @@ const RoomDetail = () => {
 
   if (isLoading) return <div>Loading.....</div>;
   if (!user) return <div>Not Authenticated</div>;
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 p-5 min-h-screen bg-[#2d2d39] text-[#adb5bd] font-sans overflow-hidden">

@@ -7,16 +7,19 @@ import type { Topic } from "../types/Topic.types";
 import type { Room } from "../types/Room.types";
 import type { Message } from "../types/Message.types";
 import { dashboardDeatils } from "../api/main";
+import Loader from "../components/Loader";
 
 const Dashboard = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [topicsCount, setTopicsCount] = useState<number>(0);
   const [roomsDetails, setRoomsDetails] = useState<Room[]>([]);
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const location = useLocation();
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const params = new URLSearchParams(location.search);
         const q = params.get("q") || "";
@@ -28,10 +31,16 @@ const Dashboard = () => {
         setRoomMessages(response.data?.room_messages);
       } catch (error) {
         console.error(`Dashboard details retrive error${error}`);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, [location.search]);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="w-full px-3 py-6 bg-[#2d2d39] text-[#adb5bd] min-h-screen">
