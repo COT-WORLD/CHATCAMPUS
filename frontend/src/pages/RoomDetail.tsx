@@ -8,10 +8,9 @@ import defaultAvatar from "../assets/avatar.svg";
 import { formatDistanceToNow } from "date-fns";
 import ConfirmModal from "../components/ConfirmModal";
 import { deleteRoom, getRoomDetail } from "../api/room";
-import { createMessageInRoom, deleteMessageInRoom } from "../api/message";
-import { parseApiErrors } from "../utils/apiErrors";
 import Toast from "../components/Toast";
 import Loader from "../components/Loader";
+import { getAccessToken } from "../utils/tokenStorage";
 
 const RoomDetail = () => {
   const { id } = useParams<{ id?: string }>();
@@ -20,38 +19,75 @@ const RoomDetail = () => {
   const [inputValue, setInputValue] = useState<string>("");
   const [isRoomDeleteModalOpen, setRoomDeleteModalOpen] =
     useState<boolean>(false);
-  const [isMessageDeleteModalOpen, setMessageDeleteModalOpen] =
-    useState<boolean>(false);
+  const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
   const [participants, setParticipants] = useState<UserType[]>([]);
   const [roomsDetails, setRoomsDetails] = useState<Room>();
   const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const backendWsHost = import.meta.env.VITE_WEBSOCKET_URL;
+
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    const token = getAccessToken();
+    const socket = new WebSocket(`${backendWsHost}/ws/chat/${id}/`);
+
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          action: "Auth_Check",
+          token: token,
+        })
+      );
+      setWs(socket);
+    };
+
+    socket.onmessage = function (event) {
+      const data = JSON.parse(event.data);
+      if (data.type === "chat_message") {
+        setRoomMessages((prev) => [...prev, data.message]);
+      } else if (data.type === "chat_message_delete") {
+        setRoomMessages((prev) => prev.filter((m) => m.id !== data.message_id));
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error("Websocket error: ", error);
+    };
+    socket.onclose = () => {
+      setWs(null);
+    };
+
+    setWs(socket);
+    return () => {
+      socket.close();
+      setWs(null);
+    };
+  }, [id]);
+
   const isHost = user?.id === roomsDetails?.owner?.id;
 
-  const onSendMessage = async (messageBody: string) => {
-    if (!id) return <Navigate to="/" replace />;
-    const data = { body: messageBody };
-    try {
-      await createMessageInRoom(id, data);
-      fetchRoomDetails();
-    } catch (error) {
-      console.error("Error while creating message in room", error);
-    }
+  const onSendMessage = (messageBody: string) => {
+    if (!ws || ws.readyState !== ws.OPEN) return;
+    ws.send(
+      JSON.stringify({
+        action: "send_message",
+        body: messageBody,
+      })
+    );
   };
-  const onDeleteMessage = async (messageId: number) => {
-    try {
-      const response = await deleteMessageInRoom(messageId);
-      if (response.status == 204) {
-        fetchRoomDetails();
-      }
-    } catch (error: any) {
-      const apiErrorMessages = parseApiErrors(error.response?.data);
-      setError(apiErrorMessages);
-      console.error("Error while deleting message in room", error);
-    }
+  const onDeleteMessage = (messageId: number) => {
+    if (!ws || ws.readyState !== ws.OPEN) return;
+    ws.send(
+      JSON.stringify({
+        action: "delete_message",
+        message_id: messageId,
+      })
+    );
   };
+
   const onDeleteRoom = async (roomId: number) => {
     try {
       const response = await deleteRoom(roomId);
@@ -220,22 +256,10 @@ const RoomDetail = () => {
                           <>
                             <button
                               type="button"
-                              onClick={() => setMessageDeleteModalOpen(true)}
+                              onClick={() => setMessageToDelete(message)}
                             >
                               <i className="fas fa-times" />
                             </button>
-                            <ConfirmModal
-                              open={isMessageDeleteModalOpen}
-                              title="Confirm Deletion"
-                              description="Are you sure you want to delete this message? This action cannot be undone."
-                              onCancel={() => setMessageDeleteModalOpen(false)}
-                              onConfirm={() => {
-                                setMessageDeleteModalOpen(false);
-                                if (message) {
-                                  onDeleteMessage(message?.id);
-                                }
-                              }}
-                            />
                           </>
                         )}
                       </div>
@@ -247,6 +271,18 @@ const RoomDetail = () => {
                   </div>
                 );
               })}
+            <ConfirmModal
+              open={!!messageToDelete}
+              title="Confirm Deletion"
+              description="Are you sure you want to delete this message? This action cannot be undone."
+              onCancel={() => setMessageToDelete(null)}
+              onConfirm={() => {
+                if (messageToDelete) {
+                  onDeleteMessage(messageToDelete.id);
+                  setMessageToDelete(null);
+                }
+              }}
+            />
           </div>
 
           {/* Input fixed at bottom */}

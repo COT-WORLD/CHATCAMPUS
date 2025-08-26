@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import sys
 from decouple import config
 from datetime import timedelta
 import dj_database_url
@@ -39,6 +38,7 @@ assert '*' not in ALLOWED_HOSTS or DEBUG, "Wildcard '*' not allowed in ALLOWED_H
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'cloudinary_storage',
     'cloudinary',
     'django.contrib.admin',
@@ -56,10 +56,12 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'corsheaders',
+    'channels',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -147,6 +149,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -233,12 +236,27 @@ STORAGES = {
     "default": {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
+ASGI_APPLICATION = "chatcampuspro.asgi.application"
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [config("REDIS_URL")],
+            "capacity": 5000,
+            "expiry": 30,
+            "symmetric_encryption_keys": [config("SECRET_KEY")],
+        }
+    }
+}
 
 if not DEBUG:
     SECURE_HSTS_SECONDS = 3600
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_SSL_REDIRECT = True
+    CSRF_TRUSTED_ORIGINS = [
+        config("CSRF_WEBSOCKET_ORIGIN"),
+    ]
 
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")
