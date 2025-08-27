@@ -258,6 +258,16 @@ if not DEBUG:
     CSRF_TRUSTED_ORIGINS = [
         config("CSRF_WEBSOCKET_ORIGIN"),
     ]
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': f'{config('REDIS_URL')}',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
+    }
+
 
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")
@@ -265,4 +275,13 @@ if DEBUG:
     INTERNAL_IPS = ['127.0.0.1',]
     DEBUG_TOOLBAR_CONFIG = {
         'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+    }
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/1',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
     }

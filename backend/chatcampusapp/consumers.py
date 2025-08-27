@@ -8,6 +8,7 @@ import bleach
 from django.http import Http404
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
 
 
 @database_sync_to_async
@@ -107,6 +108,9 @@ class ChatRoom(AsyncWebsocketConsumer):
                 return
             try:
                 message = await create_message(user, room, body)
+                cache.delete(f"RoomID{self.room_id}")
+                cache.delete("homepage_cache")
+                cache.delete(f"UserID{user.id}")
                 serialized_message = await serialize_message_to_dict(message)
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "chat_message",
@@ -129,6 +133,9 @@ class ChatRoom(AsyncWebsocketConsumer):
                     }))
                     return
                 await delete_message_instance(message)
+                cache.delete(f"RoomID{self.room_id}")
+                cache.delete("homepage_cache")
+                cache.delete(f"UserID{user.id}")
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "chat_message_delete",
                     "message_id": message_id,
