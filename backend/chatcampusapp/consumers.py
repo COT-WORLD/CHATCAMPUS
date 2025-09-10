@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 import bleach
 from django.http import Http404
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.contrib.auth.models import AnonymousUser
+from django.db import close_old_connections
 from django.core.cache import cache
 
 
@@ -54,6 +54,7 @@ def validate_token_and_get_user(token):
 class ChatRoom(AsyncWebsocketConsumer):
 
     async def connect(self):
+        close_old_connections()
         self.room_id = self.scope["url_route"]["kwargs"]["id"]
         self.room_group_name = f"ChatRoom_{self.room_id}"
 

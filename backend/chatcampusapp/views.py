@@ -11,6 +11,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import requests
 from decouple import config
 from django.core.cache import cache
+from .tasks import warm_up_dashboard_view_cache, warm_up_room_detail_view_cache, warm_up_user_profile_view_cache
+import time
 
 # Get logged in User
 User = get_user_model()
@@ -24,10 +26,7 @@ class UserCreateAPIView(APIView):
         serializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
-            user = serializer.save()
-            cache.delete("homepage_cache")
-            cache.delete(f"UserID{user.id}")
-
+            serializer.save()
             return Response({
                 "message": "User registered successfully",
             }, status=status.HTTP_201_CREATED)
@@ -55,9 +54,6 @@ class UserRetrieveUpdateAPIView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-
-            cache.delete(f"UserID{request.user.id}")
-            cache.delete("homepage_cache")
             return Response({
                 "message": "User profile updated successfully",
                 "user": serializer.data
@@ -109,9 +105,6 @@ class RoomUpdateRetrieveDeleteAPIView(APIView):
 
         if serializer.is_valid():
             serializer.save()
-            cache.delete(f"RoomID{pk}")
-            cache.delete("homepage_cache")
-            cache.delete(f"UserID{request.user.id}")
             return Response({
                 "message": "Room updated successfully",
                 "room": serializer.data
@@ -139,9 +132,6 @@ class RoomUpdateRetrieveDeleteAPIView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         room.delete()
-        cache.delete(f"RoomID{pk}")
-        cache.delete("homepage_cache")
-        cache.delete(f"UserID{request.user.id}")
 
         return Response({
             "message": "Room deleted suceessfully"
@@ -159,8 +149,6 @@ class RoomCreateAPIView(APIView):
             data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-            cache.delete("homepage_cache")
-            cache.delete(f"UserID{request.user.id}")
             return Response({
                 "message": "Room created successfully",
                 "room": serializer.data
@@ -213,10 +201,9 @@ class RoomDetailMessageCreateAPIView(APIView):
                 "message": "Room details retrieve successfully",
                 "room": RoomProfileSerializer(room, context={"request": request}).data,
                 "messages": MessageProfileSerializer(messages, many=True, context={"request": request}).data,
-                "participants": UserMinimalSerializer(participants, many=True, context={"request": request}).data,
-                "message_count": messages.count()
+                "participants": UserMinimalSerializer(participants, many=True, context={"request": request}).data
             }
-            cache.set(f"RoomID{pk}", data, timeout=300)
+            warm_up_room_detail_view_cache.delay(pk)
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
@@ -244,8 +231,6 @@ class RoomDetailMessageCreateAPIView(APIView):
             owner=user, room=room, body=clean_body)
 
         room.participants.add(user)
-        cache.delete(f"RoomID{pk}")
-        cache.delete("homepage_cache")
 
         return Response({
             "message": "Message created successfully",
@@ -275,8 +260,6 @@ class MessageDeleteAPIView(APIView):
             }, status=status.HTTP_403_FORBIDDEN)
 
         message.delete()
-        cache.delete(f"RoomID{pk}")
-        cache.delete("homepage_cache")
         return Response({
             "message": "Message deleted successfully"
         }, status=status.HTTP_204_NO_CONTENT)
@@ -286,32 +269,40 @@ class MessageDeleteAPIView(APIView):
 class HomePageAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset_data(self, q, request):
+        rooms = Room.objects.filter(
+            Q(topic__topic_name__icontains=q) |
+            Q(room_name__icontains=q) |
+            Q(room_description__icontains=q)
+        ).select_related("topic").only("id", "room_name", "room_description", "topic")[:10]
+
+        messages = Message.objects.filter(
+            Q(room__topic__topic_name__icontains=q)
+        ).select_related("owner", "room").only("id", "body", "room_id", "owner_id", "created_at")[:10]
+
+        all_topics = list(
+            Topic.objects.annotate(room_count=Count(
+                "room_topic")).order_by("-room_count")
+        )
+        topics = all_topics[:5]
+
+        return {
+            "message": "Homepage details retrieved successfully.",
+            "rooms": RoomMinimalSerializer(rooms, many=True, context={"request": request}).data,
+            "topics": TopicSerializer(topics, many=True).data,
+            "topics_count": len(all_topics),
+            "room_messages": MessageMinimalSerializer(messages, many=True, context={"request": request}).data,
+        }
+
     def get(self, request):
-        data = cache.get("homepage_cache")
+        q = request.GET.get("q", "").strip()
+        cache_key = f'homepage_cache_{q}' if q else 'homepage_cache'
+
+        data = cache.get(cache_key)
 
         if not data:
-            q = request.GET.get("q", "").strip()
-
-            rooms = Room.objects.filter(
-                Q(topic__topic_name__icontains=q) |
-                Q(room_name__icontains=q) |
-                Q(room_description__icontains=q)
-            ).select_related("topic").only("id", "room_name", "room_description", "topic")[0:10]
-
-            topics = (Topic.objects.annotate(room_count=Count(
-                "room_topic")).order_by("-room_count")[0:5])
-
-            messages = Message.objects.filter(
-                Q(room__topic__topic_name__icontains=q)
-            ).select_related("owner", "room").only("id", "body", "room_id", "owner_id", "created_at")[0:10]
-            data = {
-                "message": "Homepage detials retrieve successfully.",
-                "rooms": RoomMinimalSerializer(rooms, many=True, context={"request": request}).data,
-                "topics": TopicSerializer(topics, many=True).data,
-                "topics_count": Topic.objects.count(),
-                "room_messages": MessageMinimalSerializer(messages, many=True, context={"request": request}).data,
-            }
-            cache.set('homepage_cache', data, timeout=300)
+            data = self.get_queryset_data(q, request)
+            warm_up_dashboard_view_cache.delay(q)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -327,20 +318,24 @@ class UserProfileAPIView(APIView):
                 return Response({
                     "message": "User ID is required to get user profile."
                 }, status=status.HTTP_400_BAD_REQUEST)
-            user_details = get_object_or_404(User, id=pk)
-            rooms = user_details.room_owner.all()
-            messages = user_details.message_owner.all()[:8]
-            topics = Topic.objects.annotate(room_count=Count(
-                "room_topic")).order_by("-room_count")[:5]
+            user_details = get_object_or_404(
+                User.objects.prefetch_related('room_owner', 'message_owner'), id=pk)
+            rooms = user_details.room_owner.all().select_related('topic')
+            messages = user_details.message_owner.all(
+            ).select_related('room')[:8]
+            all_topics = list(Topic.objects.annotate(room_count=Count(
+                "room_topic")).order_by("-room_count"))
+            topics_count = len(all_topics)
+            topics = all_topics[:5]
             data = {
                 "message": "User profile retrieve successfully",
                 "user": UserMinimalSerializer(user_details, context={"request": request}).data,
                 "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
                 "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
                 "topics": TopicSerializer(topics, many=True).data,
-                "topics_count": Topic.objects.count(),
+                "topics_count": topics_count,
             }
-            cache.set(f"UserID{pk}", data, 300)
+            warm_up_user_profile_view_cache.delay(pk)
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -353,7 +348,6 @@ class GoogleAuthAPIView(APIView):
         if not access_token:
             return Response({"error": "No access token provided."}, status=400)
 
-        # 1. Get user info from Google
         userinfo_url = f"{config("GOOGLE_AUTH_URI")}{access_token}"
         resp = requests.get(userinfo_url)
         if resp.status_code != 200:
@@ -367,21 +361,16 @@ class GoogleAuthAPIView(APIView):
         if not email:
             return Response({"error": "Google account has no email"}, status=400)
 
-        # 2. Create or fetch user in your DB
         user, created = User.objects.get_or_create(
             email=email,
             defaults={'first_name': first_name, 'last_name': last_name}
         )
-        cache.delete("homepage_cache")
-        cache.delete(f"UserID{user.id}")
 
-        # (Optional: update names on each login)
         if not created:
             user.first_name = first_name
             user.last_name = last_name
             user.save()
 
-        # 3. Generate tokens
         refresh = RefreshToken.for_user(user)
         return Response({
             "access": str(refresh.access_token),

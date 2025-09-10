@@ -1,12 +1,16 @@
-from django.db.models.signals import post_migrate
+from django.db.models.signals import post_migrate, post_save, post_delete
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
+from chatcampusapp.tasks import invalidate_and_warm_all_cache
 from chatcampusapp.models import Topic, Room, Message
 from faker import Faker
 import random
 from dummy_text_generator import generate_sentence
 from decouple import config
 import sys
+from django.core.cache import cache
+import logging
+logger = logging.getLogger("chatcampusapp")
 
 fake = Faker()
 User = get_user_model()
@@ -24,7 +28,7 @@ FIRST_NAMES = [
 @receiver(post_migrate)
 def initialize_project_data(sender, **kwargs):
     if 'test' in sys.argv:
-        print("Skipping data seeding during test run.")
+        logging.info("Skipping data seeding during test run.")
         return
     seed_initial_data()
 
@@ -34,15 +38,15 @@ def seed_initial_data():
     if Room.objects.exists():
         return
 
-    print("🌱 Seeding users...")
+    logging.info("🌱 Seeding users...")
     users = create_users()
-    print("🌱 Seeding topics...")
+    logging.info("🌱 Seeding topics...")
     topics = create_topics()
-    print("🏗 Creating rooms...")
+    logging.info("🏗 Creating rooms...")
     rooms = create_rooms(users, topics)
-    print("💬 Creating messages...")
+    logging.info("💬 Creating messages...")
     add_messages_and_participants(rooms, users)
-    print("✅ Seeding completed.")
+    logging.info("✅ Seeding completed.")
 
 
 def create_users():
@@ -151,3 +155,31 @@ def add_messages_and_participants(rooms, users):
 
     through_model.objects.bulk_create(through_entries, ignore_conflicts=True)
     Message.objects.bulk_create(messages)
+
+
+@receiver([post_save], sender=Room)
+@receiver([post_save], sender=Message)
+@receiver([post_save], sender=User)
+@receiver([post_save], sender=Topic)
+def handle_model_change_invalidate_all_cache(sender, instance, **kwargs):
+    logger.info("Signal triggered; warming cache.")
+    invalidate_and_warm_all_cache.delay()
+    logger.info("Warming cache finished.")
+
+
+@receiver(post_delete, sender=Room)
+def handle_room_delete(sender, instance, **kwargs):
+    logger.info(f"Room deleted: {instance.id}")
+    invalidate_and_warm_all_cache.delay({"model": "Room", "id": instance.id})
+
+
+@receiver(post_delete, sender=User)
+def handle_user_delete(sender, instance, **kwargs):
+    logger.info(f"User deleted: {instance.id}")
+    invalidate_and_warm_all_cache.delay({"model": "User", "id": instance.id})
+
+
+@receiver(post_delete, sender=Message)
+def handle_generic_delete(sender, instance, **kwargs):
+    logger.info(f"{sender.__name__} deleted: {instance.id}")
+    invalidate_and_warm_all_cache.delay()

@@ -14,6 +14,8 @@ from pathlib import Path
 from decouple import config
 from datetime import timedelta
 import dj_database_url
+import os
+from django.utils.log import DEFAULT_LOGGING
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -60,6 +62,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -69,7 +72,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'chatcampuspro.urls'
@@ -94,14 +96,21 @@ WSGI_APPLICATION = 'chatcampuspro.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    "default": dj_database_url.parse(
-        config("EXTERNAL_DATABASE_URL"),
-        conn_max_age=0,
-        ssl_require=True,
-    )
-}
+if DEBUG:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            config("EXTERNAL_LOCAL_DATABASE_URL"),
+            conn_max_age=0,
+        )
+    }
+else:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            config("EXTERNAL_DATABASE_URL"),
+            conn_max_age=0,
+            ssl_require=True,
+        )
+    }
 
 DATABASES["default"]["OPTIONS"] = {
     "pool": {
@@ -112,6 +121,7 @@ DATABASES["default"]["OPTIONS"] = {
         "max_idle": 300,
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -158,7 +168,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # DRF and JWT settings
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -217,12 +226,12 @@ SOCIALACCOUNT_PROVIDERS = {
 AUTH_USER_MODEL = 'chatcampusapp.User'
 
 # CORS settings
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:5173',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
-CORS_ALLOW_CREDENTIALS = True
 
 
 # File storage settings - changed to cloudinary
@@ -267,6 +276,7 @@ if not DEBUG:
             }
         }
     }
+    CELERY_BROKER_URL = config('REDIS_URL')
 
 
 if DEBUG:
@@ -285,3 +295,69 @@ if DEBUG:
             }
         }
     }
+    CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
+
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} ({module}: {lineno}) - {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
+        }
+    },
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "INFO",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": os.path.join(LOG_DIR, "django.log"),
+            "when": "midnight",
+            "backupCount": 30,
+            "formatter": "verbose",
+        },
+        "error_file": {
+            "level": "ERROR",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": os.path.join(LOG_DIR, "errors.log"),
+            "when": "midnight",
+            "backupCount": 30,
+            "formatter": "verbose",
+        },
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "formatter": "verbose",
+        }
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file", "mail_admins"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["error_file", "mail_admins"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "chatcampusapp": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": False,
+        }
+    }
+}
