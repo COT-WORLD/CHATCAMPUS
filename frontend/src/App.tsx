@@ -15,30 +15,38 @@ import UserProfile from "./pages/UserProfile";
 import EditUserProfile from "./pages/EditUserProfile";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+const queryClient = new QueryClient();
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route element={<GuestRoute />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Register />} />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route element={<GuestRoute />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Register />} />
+                </Route>
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/topics" element={<Topics />} />
+                  <Route path="/createRoom" element={<RoomManage />} />
+                  <Route path="/updateRoom/:id" element={<RoomManage />} />
+                  <Route path="/roomDetails/:id" element={<RoomDetail />} />
+                  <Route path="/userProfile/:id" element={<UserProfile />} />
+                  <Route
+                    path="/editProfile/:id"
+                    element={<EditUserProfile />}
+                  />
+                </Route>
               </Route>
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/topics" element={<Topics />} />
-                <Route path="/createRoom" element={<RoomManage />} />
-                <Route path="/updateRoom/:id" element={<RoomManage />} />
-                <Route path="/roomDetails/:id" element={<RoomDetail />} />
-                <Route path="/userProfile/:id" element={<UserProfile />} />
-                <Route path="/editProfile/:id" element={<EditUserProfile />} />
-              </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
     </GoogleOAuthProvider>
   );
 }

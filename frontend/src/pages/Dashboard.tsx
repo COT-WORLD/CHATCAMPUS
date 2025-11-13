@@ -2,45 +2,35 @@ import { Link, useLocation } from "react-router-dom";
 import TopicsSideBar from "../components/TopicsSideBar";
 import RoomDetailsCard from "../components/RoomDetailsCard";
 import ActivityCard from "../components/ActivityCard";
-import { useEffect, useState } from "react";
 import type { Topic } from "../types/Topic.types";
 import type { Room } from "../types/Room.types";
 import type { Message } from "../types/Message.types";
 import { dashboardDeatils } from "../api/main";
 import Loader from "../components/Loader";
+import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [topicsCount, setTopicsCount] = useState<number>(0);
-  const [roomsDetails, setRoomsDetails] = useState<Room[]>([]);
-  const [roomMessages, setRoomMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
   const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const q = params.get("q") || "";
+  const urlQuery = q ? `?q=${encodeURIComponent(q)}` : "";
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["dashboardDetails", q],
+    queryFn: () => dashboardDeatils(urlQuery).then((res) => res.data),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 1000,
+    refetchOnWindowFocus: true,
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams(location.search);
-        const q = params.get("q") || "";
-        const url = q ? `?q=${encodeURIComponent(q)}` : "";
-        const response = await dashboardDeatils(url);
-        setTopics(response.data?.topics);
-        setTopicsCount(response.data?.topics_count);
-        setRoomsDetails(response.data?.rooms);
-        setRoomMessages(response.data?.room_messages);
-      } catch (error) {
-        console.error(`Dashboard details retrive error${error}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [location.search]);
-
-  if (loading) {
+  if (isLoading) {
     return <Loader />;
   }
+  if (error) return <div>Error loading dashboard data.</div>;
+
+  const topics: Topic[] = data?.topics ?? [];
+  const topicsCount: number = data?.topics_count ?? 0;
+  const roomsDetails: Room[] = data?.rooms ?? [];
+  const roomMessages: Message[] = data?.room_messages ?? [];
 
   return (
     <div className="w-full px-3 py-6 bg-[#2d2d39] text-[#adb5bd] min-h-screen">
