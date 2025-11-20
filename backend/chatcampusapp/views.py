@@ -1,3 +1,4 @@
+from django.db import connection
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,6 +14,8 @@ from decouple import config
 from django.core.cache import cache
 from .tasks import warm_up_dashboard_view_cache, warm_up_room_detail_view_cache, warm_up_user_profile_view_cache
 import time
+import logging
+logger = logging.getLogger("dashboard")
 # Get logged in User
 User = get_user_model()
 
@@ -301,6 +304,7 @@ class HomePageAPIView(APIView):
         }
 
     def get(self, request):
+        t0 = time.perf_counter()
         q = request.GET.get("q", "").strip()
         cache_key = f'homepage_cache_{q}' if q else 'homepage_cache'
 
@@ -309,6 +313,8 @@ class HomePageAPIView(APIView):
         if not data:
             data = self.get_queryset_data(q, request)
             warm_up_dashboard_view_cache.delay(q)
+        logger.info("Dashboard prod %.0f ms | queries %d",
+                    (time.perf_counter()-t0)*1000, len(connection.queries))
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -317,6 +323,7 @@ class UserProfileAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        t0 = time.perf_counter()
         pk = kwargs["pk"]
         data = cache.get(f"UserID{pk}")
         if not data:
@@ -352,6 +359,8 @@ class UserProfileAPIView(APIView):
                 "topics_count": topics_count,
             }
             warm_up_user_profile_view_cache.delay(pk)
+        logger.info("UserProfile prod %.0f ms | queries %d",
+                    (time.perf_counter()-t0)*1000, len(connection.queries))
         return Response(data, status=status.HTTP_200_OK)
 
 
