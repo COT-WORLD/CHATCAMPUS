@@ -18,7 +18,7 @@ const Dashboard = () => {
     queryKey: ["dashboardDetails", q],
     queryFn: () => dashboardDeatils(urlQuery).then((res) => res.data),
     staleTime: 5 * 60 * 1000,
-    refetchInterval: 10 * 1000,
+    refetchInterval: 14 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
 

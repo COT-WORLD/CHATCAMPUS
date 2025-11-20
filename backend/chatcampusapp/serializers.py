@@ -105,9 +105,7 @@ class TopicSerializer(serializers.ModelSerializer):
 class RoomSerializer(serializers.ModelSerializer):
     owner = UserSerializer(read_only=True)
     participants = UserSerializer(many=True, read_only=True)
-    # Accept topic as a string
     topic = serializers.CharField(write_only=True)
-    # Use as output only (detailed topic object)
     topic_details = TopicSerializer(source="topic", read_only=True)
 
     class Meta:
@@ -213,16 +211,13 @@ class TopicNameSerializer(serializers.ModelSerializer):
 
 class RoomMinimalSerializer(serializers.ModelSerializer):
     owner = UserMinimalSerializer(read_only=True)
-    participants_count = serializers.SerializerMethodField()
+    participants_count = serializers.IntegerField(read_only=True)
     topic_details = TopicNameSerializer(source="topic", read_only=True)
 
     class Meta:
         model = Room
         fields = ['id', 'room_name', 'owner', 'created_at',
                   'participants_count', 'topic_details']
-
-    def get_participants_count(self, obj):
-        return obj.participants.count()
 
 
 class RoomNameandIDSerilizer(serializers.ModelSerializer):

@@ -13,7 +13,6 @@ from decouple import config
 from django.core.cache import cache
 from .tasks import warm_up_dashboard_view_cache, warm_up_room_detail_view_cache, warm_up_user_profile_view_cache
 import time
-
 # Get logged in User
 User = get_user_model()
 
@@ -270,22 +269,29 @@ class HomePageAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset_data(self, q, request):
-        rooms = Room.objects.filter(
-            Q(topic__topic_name__icontains=q) |
-            Q(room_name__icontains=q) |
-            Q(room_description__icontains=q)
-        ).select_related("topic").only("id", "room_name", "room_description", "topic")[:10]
+        rooms = (Room.objects
+                 .filter(Q(topic__topic_name__icontains=q) |
+                         Q(room_name__icontains=q) |
+                         Q(room_description__icontains=q))
+                 .select_related("topic", "owner")
+                 .annotate(participants_count=Count("participants",
+                                                    # optional
+                                                    filter=Q(participants__is_active=True)))
+                 .only("id", "room_name", "created_at",
+                       "topic__id", "topic__topic_name",
+                       "owner__id", "owner__first_name", "owner__avatar")[:10])
 
         messages = Message.objects.filter(
             Q(room__topic__topic_name__icontains=q)
-        ).select_related("owner", "room").only("id", "body", "room_id", "owner_id", "created_at")[:10]
+        ).select_related("owner", "room").only("id", "body", "created_at",
+                                               "room__id", "room__room_name",
+                                               "owner__id", "owner__first_name", "owner__avatar")[:10]
 
         all_topics = list(
             Topic.objects.annotate(room_count=Count(
                 "room_topic")).order_by("-room_count")
         )
         topics = all_topics[:5]
-
         return {
             "message": "Homepage details retrieved successfully.",
             "rooms": RoomMinimalSerializer(rooms, many=True, context={"request": request}).data,
@@ -318,20 +324,30 @@ class UserProfileAPIView(APIView):
                 return Response({
                     "message": "User ID is required to get user profile."
                 }, status=status.HTTP_400_BAD_REQUEST)
-            user_details = get_object_or_404(
-                User.objects.prefetch_related('room_owner', 'message_owner'), id=pk)
-            rooms = user_details.room_owner.all().select_related('topic')
-            messages = user_details.message_owner.all(
-            ).select_related('room')[:8]
-            all_topics = list(Topic.objects.annotate(room_count=Count(
-                "room_topic")).order_by("-room_count"))
+            user = get_object_or_404(
+                User.objects.only('id', 'avatar', "first_name"), id=pk)
+            rooms = (Room.objects
+                     .filter(owner=user)
+                     .select_related("topic", "owner")          # 1 query
+                     .annotate(participants_count=Count("participants")).only("id", "room_name", "room_description", "created_at",
+                                                                              "topic__id", "topic__topic_name",
+                                                                              "owner__id", "owner__first_name", "owner__avatar")[:10])
+            messages = (Message.objects
+                        .filter(owner=user)
+                        .select_related("room", "owner")
+                        .only("id", "body", "created_at",
+                              "room__id", "room__room_name",
+                              "owner__id", "owner__first_name", "owner__avatar")[:8])
+            all_topics = (Topic.objects
+                          .annotate(room_count=Count("room_topic"))
+                          .order_by("-room_count"))
             topics_count = len(all_topics)
             topics = all_topics[:5]
             data = {
                 "message": "User profile retrieve successfully",
-                "user": UserMinimalSerializer(user_details, context={"request": request}).data,
-                "rooms": RoomSerializer(rooms, many=True, context={"request": request}).data,
-                "room_messages": MessageSerializer(messages, many=True, context={"request": request}).data,
+                "user": UserMinimalSerializer(user, context={"request": request}).data,
+                "rooms": RoomMinimalSerializer(rooms, many=True, context={"request": request}).data,
+                "room_messages": MessageMinimalSerializer(messages, many=True, context={"request": request}).data,
                 "topics": TopicSerializer(topics, many=True).data,
                 "topics_count": topics_count,
             }
