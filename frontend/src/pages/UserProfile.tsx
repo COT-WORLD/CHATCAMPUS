@@ -5,53 +5,44 @@ import RoomDetailsCard from "../components/RoomDetailsCard";
 import defaultAvatar from "../assets/avatar.svg";
 import { useAuth } from "../context/AuthContext";
 import type { UserType } from "../types/User.types";
-import { useEffect, useState } from "react";
 import type { Topic } from "../types/Topic.types";
 import type { Room } from "../types/Room.types";
 import type { Message } from "../types/Message.types";
 import { getUserProfileDetail } from "../api/user";
 import Loader from "../components/Loader";
+import { useQuery } from "@tanstack/react-query";
 
 const UserProfile = () => {
   const { id } = useParams<{ id?: string }>();
-  const { user, isLoading } = useAuth();
-  const [users, setUsers] = useState<UserType>();
-  const [topics, setTopics] = useState<Topic[]>([]);
-  const [topicsCount, setTopicsCount] = useState<number>(0);
-  const [roomsDetails, setRoomsDetails] = useState<Room[]>([]);
-  const [roomMessages, setRoomMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
 
-  useEffect(() => {
-    const fetchUserProfileDetails = async () => {
-      if (!id) return <Navigate to="/" replace />;
-      setLoading(true);
-      try {
-        const response = await getUserProfileDetail(id);
-        setUsers(response?.data.user);
-        setTopics(response?.data.topics);
-        setRoomsDetails(response?.data.rooms);
-        setRoomMessages(response?.data.room_messages);
-        setTopicsCount(response?.data.topics_count);
-      } catch (error) {
-        console.error("Error while fecthing user profile details", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUserProfileDetails();
-  }, []);
+  if (!id) return <Navigate to="/" replace />;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["userProfileDetails", id],
+    queryFn: () => getUserProfileDetail(id).then((res) => res.data),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 14 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
 
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (error) {
+    return <div>Error loading Userprofile data.</div>;
+  }
+
+  const users: UserType = data?.user ?? [];
+  const topics: Topic[] = data?.topics ?? [];
+  const topicsCount: number = data?.topics_count ?? 0;
+  const roomsDetails: Room[] = data?.rooms ?? [];
+  const roomMessages: Message[] = data?.room_messages ?? [];
   const avatarUrl = users?.avatar ? users.avatar : defaultAvatar;
   const name = users?.first_name || users?.last_name;
   const userTag = `@${users?.first_name || users?.last_name}`;
   const isOwner = users?.id == user?.id;
-
-  if (isLoading) return <div>Loading.....</div>;
-  if (!user) return <div>Not Authenticated</div>;
-  if (loading) {
-    return <Loader />;
-  }
 
   return (
     <div className="w-full min-h-screen bg-[#2d2d39] text-[#adb5bd] font-sans">
