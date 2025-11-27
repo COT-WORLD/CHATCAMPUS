@@ -16,12 +16,15 @@ import {
   clearTokens,
 } from "../utils/tokenStorage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AuthPhase } from "../types/AuthPhase";
+import { dashboardDetails } from "../api/main";
 
 type AuthContextType = {
   user: UserType | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  isLoading: boolean;
+  phase: AuthPhase;
+  loginInProgress: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,13 +41,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const queryClient = useQueryClient();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginInProgress, setLoginInProgress] = useState(false);
 
   const {
     data: user,
-    isLoading: isUserLoading,
     error,
     refetch,
+    isLoading,
   } = useQuery<UserType | null, Error>({
     queryKey: ["userProfile"],
     queryFn: async () => {
@@ -63,50 +66,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [error, queryClient]);
 
-  const login = async (email: string, password: string) => {
-    setIsLoggingIn(true);
-    try {
-      const response = await apiLogin({ email, password });
-      const tokens = response.data;
-      setAccessToken(tokens.access);
-      setRefreshToken(tokens.refresh);
-      api.defaults.headers.common["Authorization"] = `Bearer ${tokens.access}`;
+  const phase = useMemo<AuthPhase>(() => {
+    if (loginInProgress) return "logging_in";
+    if (!getAccessToken()) return "idle";
+    if (error) return "idle";
+    if (isLoading) return "refetching_user";
+    return "ready";
+  }, [isLoading, error, loginInProgress]);
 
-      await refetch();
+  const login = async (email: string, password: string) => {
+    setLoginInProgress(true);
+    try {
+      const { data } = await apiLogin({ email, password });
+      setAccessToken(data.access);
+      setRefreshToken(data.refresh);
+      api.defaults.headers.common["Authorization"] = `Bearer ${data.access}`;
+
+      await Promise.all([
+        refetch(),
+        queryClient.fetchQuery({
+          queryKey: ["dashboardDetails", ""],
+          queryFn: () => dashboardDetails("").then((r) => r.data),
+        }),
+      ]);
+    } catch (e) {
+      throw e;
     } finally {
-      setIsLoggingIn(false);
+      setLoginInProgress(false);
     }
   };
 
   const logout = async () => {
-    try {
-      const refresh = getRefreshToken();
-      if (refresh) {
-        await apiLogout(refresh);
-      }
-    } catch (error) {
-      console.warn("Logout API call failed", error);
-    } finally {
-      clearTokens();
-      delete api.defaults.headers.common["Authorization"];
-      queryClient.removeQueries({ queryKey: ["userProfile"] });
-      window.location.href = "/login";
-    }
+    const refresh = getRefreshToken();
+    if (refresh) apiLogout(refresh).catch(() => {});
+    clearTokens();
+    delete api.defaults.headers.common["Authorization"];
+    queryClient.clear();
+    window.location.href = "/login";
   };
 
-  const isLoading = isUserLoading || isLoggingIn;
-
-  const contextValue = useMemo<AuthContextType>(
-    () => ({
-      user: user ?? null,
-      login,
-      logout,
-      isLoading,
-    }),
-    [user, login, logout, isLoading]
+  const value = useMemo<AuthContextType>(
+    () => ({ user: user ?? null, login, logout, phase, loginInProgress }),
+    [user, login, logout, phase, loginInProgress]
   );
 
-  return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

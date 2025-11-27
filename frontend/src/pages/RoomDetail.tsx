@@ -14,7 +14,7 @@ import { getAccessToken } from "../utils/tokenStorage";
 
 const RoomDetail = () => {
   const { id } = useParams<{ id?: string }>();
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState<string>("");
   const [isRoomDeleteModalOpen, setRoomDeleteModalOpen] =
@@ -118,7 +118,6 @@ const RoomDetail = () => {
     fetchRoomDetails();
   }, [id]);
 
-  if (isLoading) return <div>Loading.....</div>;
   if (!user) return <div>Not Authenticated</div>;
   if (loading) {
     return <Loader />;

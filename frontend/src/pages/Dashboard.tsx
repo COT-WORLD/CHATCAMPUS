@@ -5,27 +5,24 @@ import ActivityCard from "../components/ActivityCard";
 import type { Topic } from "../types/Topic.types";
 import type { Room } from "../types/Room.types";
 import type { Message } from "../types/Message.types";
-import { dashboardDeatils } from "../api/main";
-import Loader from "../components/Loader";
+import { dashboardDetails } from "../api/main";
 import { useQuery } from "@tanstack/react-query";
+import TopicsSideBarSkeleton from "../components/TopicsSideBarSkeleton";
+import RoomDetailsCardSkeleton from "../components/RoomDetailsCardSkeleton";
+import ActivityCardSkeleton from "../components/ActivityCardSkeleton";
 
 const Dashboard = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const q = params.get("q") || "";
   const urlQuery = q ? `?q=${encodeURIComponent(q)}` : "";
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["dashboardDetails", q],
-    queryFn: () => dashboardDeatils(urlQuery).then((res) => res.data),
+    queryFn: () => dashboardDetails(urlQuery).then((res) => res.data),
     staleTime: 5 * 60 * 1000,
     refetchInterval: 14 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
-
-  if (isLoading) {
-    return <Loader />;
-  }
-  if (error) return <div>Error loading dashboard data.</div>;
 
   const topics: Topic[] = data?.topics ?? [];
   const topicsCount: number = data?.topics_count ?? 0;
@@ -35,14 +32,18 @@ const Dashboard = () => {
   return (
     <div className="w-full px-3 py-6 bg-[#2d2d39] text-[#adb5bd] min-h-screen">
       <div className="flex flex-col md:flex-row gap-5">
-        <TopicsSideBar topics={topics} topicsCount={topicsCount} />
+        {isLoading ? (
+          <TopicsSideBarSkeleton />
+        ) : (
+          <TopicsSideBar topics={topics} topicsCount={topicsCount} />
+        )}
 
         <div className="md:w-7/12">
           <div className="flex justify-between mb-4">
             <div>
               <h5 className="text-lg font-semibold">Chat Room</h5>
               <small className="text-sm text-gray-400">
-                {2} Rooms available
+                {roomsDetails.length} Rooms available
               </small>
             </div>
             <Link
@@ -52,11 +53,19 @@ const Dashboard = () => {
               <i className="fas fa-plus mr-1"></i> Create Room
             </Link>
           </div>
-          <RoomDetailsCard roomsDetails={roomsDetails} />
+          {isLoading ? (
+            <RoomDetailsCardSkeleton />
+          ) : (
+            <RoomDetailsCard roomsDetails={roomsDetails} />
+          )}
         </div>
 
         <div className="md:w-1/4">
-          <ActivityCard roomMessages={roomMessages} />
+          {isLoading ? (
+            <ActivityCardSkeleton />
+          ) : (
+            <ActivityCard roomMessages={roomMessages} />
+          )}
         </div>
       </div>
     </div>

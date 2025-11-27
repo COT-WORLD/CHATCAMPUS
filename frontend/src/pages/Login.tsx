@@ -4,7 +4,7 @@ import { loginSchema } from "../schemas/login.schema";
 import z from "zod";
 import { useAuth } from "../context/AuthContext";
 import FormInput from "../components/FormInput";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
 import { useState } from "react";
 import { parseApiErrors } from "../utils/apiErrors";
@@ -14,7 +14,9 @@ import { ssoLogin } from "../api/auth";
 import { setAccessToken, setRefreshToken } from "../utils/tokenStorage";
 
 const Login: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { login, phase } = useAuth();
+  const navigate = useNavigate();
+  const isWorking = phase === "logging_in";
   const [toastError, setToastError] = useState<string[] | null>(null);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const {
@@ -28,7 +30,7 @@ const Login: React.FC = () => {
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     try {
       await login(data.email, data.password);
-      window.location.href = "/";
+      navigate("/", { replace: true });
     } catch (error: any) {
       const apiErrorMessages = parseApiErrors(error.response?.data);
       setToastError(apiErrorMessages);
@@ -46,7 +48,7 @@ const Login: React.FC = () => {
         if (result.data?.access && result.data?.refresh) {
           setAccessToken(result.data.access);
           setRefreshToken(result.data.refresh);
-          window.location.href = "/";
+          navigate("/", { replace: true });
         } else {
           console.error("Backend did not retrun valid JWT tokens");
         }
@@ -90,10 +92,14 @@ const Login: React.FC = () => {
             <button
               type="submit"
               className="bg-[#71c6dd] text-[#3f4156] p-3 rounded w-full text-base transition-all flex items-center justify-center gap-2 hover:opacity-90"
-              disabled={isLoading}
+              disabled={isWorking}
             >
-              <i className="fas fa-lock"></i>
-              {isLoading ? "Logging in..." : "Login"}
+              {isWorking ? (
+                <i className="fas fa-spinner fa-spin"></i>
+              ) : (
+                <i className="fas fa-lock"></i>
+              )}
+              {isWorking ? "Logging in..." : "Login"}
             </button>
 
             {toastError && (

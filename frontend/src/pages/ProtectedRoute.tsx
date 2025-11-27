@@ -1,9 +1,14 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { getAccessToken } from "../utils/tokenStorage";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const ProtectedRoute = () => {
-  const token = getAccessToken();
-  return token ? <Outlet /> : <Navigate to="/login" />;
-};
+  const { phase, loginInProgress } = useAuth();
+  const location = useLocation();
 
+  if (phase === "idle" || loginInProgress) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <Outlet />;
+};
 export default ProtectedRoute;
