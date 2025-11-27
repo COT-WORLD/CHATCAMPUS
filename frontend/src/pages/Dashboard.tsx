@@ -11,6 +11,12 @@ import TopicsSideBarSkeleton from "../components/TopicsSideBarSkeleton";
 import RoomDetailsCardSkeleton from "../components/RoomDetailsCardSkeleton";
 import ActivityCardSkeleton from "../components/ActivityCardSkeleton";
 
+import { memo } from "react";
+
+const TopicsSideBarMemo = memo(TopicsSideBar);
+const RoomDetailsCardMemo = memo(RoomDetailsCard);
+const ActivityCardMemo = memo(ActivityCard);
+
 const Dashboard = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -20,8 +26,8 @@ const Dashboard = () => {
     queryKey: ["dashboardDetails", q],
     queryFn: () => dashboardDetails(urlQuery).then((res) => res.data),
     staleTime: 5 * 60 * 1000,
-    refetchInterval: 14 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const topics: Topic[] = data?.topics ?? [];
@@ -35,7 +41,7 @@ const Dashboard = () => {
         {isLoading ? (
           <TopicsSideBarSkeleton />
         ) : (
-          <TopicsSideBar topics={topics} topicsCount={topicsCount} />
+          <TopicsSideBarMemo topics={topics} topicsCount={topicsCount} />
         )}
 
         <div className="md:w-7/12">
@@ -56,7 +62,7 @@ const Dashboard = () => {
           {isLoading ? (
             <RoomDetailsCardSkeleton />
           ) : (
-            <RoomDetailsCard roomsDetails={roomsDetails} />
+            <RoomDetailsCardMemo roomsDetails={roomsDetails} />
           )}
         </div>
 
@@ -64,7 +70,7 @@ const Dashboard = () => {
           {isLoading ? (
             <ActivityCardSkeleton />
           ) : (
-            <ActivityCard roomMessages={roomMessages} />
+            <ActivityCardMemo roomMessages={roomMessages} />
           )}
         </div>
       </div>
