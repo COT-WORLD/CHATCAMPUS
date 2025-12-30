@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import type { UserType } from "../types/User.types";
 import type { Room } from "../types/Room.types";
@@ -7,88 +7,48 @@ import type { Message } from "../types/Message.types";
 import defaultAvatar from "../assets/avatar.svg";
 import { formatDistanceToNow } from "date-fns";
 import ConfirmModal from "../components/ConfirmModal";
-import { deleteRoom, getRoomDetail } from "../api/room";
+import { deleteRoom } from "../api/room";
 import Toast from "../components/Toast";
-import Loader from "../components/Loader";
-import { getAccessToken } from "../utils/tokenStorage";
+import useRoomWebSocket from "../hooks/useRoomWebSocket";
+import useRoom from "../hooks/useRoom";
+import RoomDetailsSkeleton from "../components/RoomDetailsSkeleton";
 
 const RoomDetail = () => {
   const { id } = useParams<{ id?: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [inputValue, setInputValue] = useState<string>("");
   const [isRoomDeleteModalOpen, setRoomDeleteModalOpen] =
     useState<boolean>(false);
   const [messageToDelete, setMessageToDelete] = useState<Message | null>(null);
-  const [participants, setParticipants] = useState<UserType[]>([]);
-  const [roomsDetails, setRoomsDetails] = useState<Room>();
-  const [roomMessages, setRoomMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
 
-  const backendWsHost = import.meta.env.VITE_WEBSOCKET_URL;
+  const { data, isLoading } = useRoom(id);
+  const { send } = useRoomWebSocket(id);
 
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  useEffect(() => {
-    if (!id) return;
-    const token = getAccessToken();
-    const socket = new WebSocket(`${backendWsHost}/ws/chat/${id}/`);
-
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          action: "Auth_Check",
-          token: token,
-        })
-      );
-      setWs(socket);
-    };
-
-    socket.onmessage = function (event) {
-      const data = JSON.parse(event.data);
-      if (data.type === "chat_message") {
-        setRoomMessages((prev) => [...prev, data.message]);
-      } else if (data.type === "chat_message_delete") {
-        setRoomMessages((prev) => prev.filter((m) => m.id !== data.message_id));
-      }
-    };
-
-    socket.onerror = (error) => {
-      console.error("Websocket error: ", error);
-    };
-    socket.onclose = () => {
-      setWs(null);
-    };
-
-    setWs(socket);
-    return () => {
-      socket.close();
-      setWs(null);
-    };
-  }, [id]);
+  const participants: UserType[] = data?.participants ?? [];
+  const roomsDetails: Room = data?.room ?? {};
+  const roomMessages: Message[] = data?.messages ?? [];
 
   const isHost = user?.id === roomsDetails?.owner?.id;
 
-  const onSendMessage = (messageBody: string) => {
-    if (!ws || ws.readyState !== ws.OPEN) return;
-    ws.send(
-      JSON.stringify({
-        action: "send_message",
-        body: messageBody,
-      })
-    );
+  const sendMessage = (messageBody: string) => {
+    if (!messageBody.trim()) return;
+    try {
+      send({ action: "send_message", body: messageBody });
+      setInputValue("");
+    } catch (error) {
+      console.error("Error while sending message in room", error);
+    }
   };
-  const onDeleteMessage = (messageId: number) => {
-    if (!ws || ws.readyState !== ws.OPEN) return;
-    ws.send(
-      JSON.stringify({
-        action: "delete_message",
-        message_id: messageId,
-      })
-    );
+  const deleteMessage = (messageId: number) => {
+    if (!messageId) return;
+    send({ action: "delete_message", message_id: messageId });
+    setMessageToDelete(null);
   };
 
-  const onDeleteRoom = async (roomId: number) => {
+  const handleDeleteRoom = async (roomId: number) => {
     try {
       const response = await deleteRoom(roomId);
       if (response.status == 204) {
@@ -96,31 +56,13 @@ const RoomDetail = () => {
       }
     } catch (error) {
       console.error("Error while deleting message in room", error);
-    }
-  };
-
-  const fetchRoomDetails = async () => {
-    if (!id) return <Navigate to="/" replace />;
-    setLoading(true);
-    try {
-      const response = await getRoomDetail(id);
-      setParticipants(response?.data.participants);
-      setRoomsDetails(response?.data.room);
-      setRoomMessages(response?.data.messages);
-    } catch (error) {
-      console.error("Error while fetching room details", error);
     } finally {
-      setLoading(false);
+      setRoomDeleteModalOpen(false);
     }
   };
 
-  useEffect(() => {
-    fetchRoomDetails();
-  }, [id]);
-
-  if (!user) return <div>Not Authenticated</div>;
-  if (loading) {
-    return <Loader />;
+  if (isLoading) {
+    return <RoomDetailsSkeleton />;
   }
 
   return (
@@ -159,7 +101,7 @@ const RoomDetail = () => {
                 onConfirm={() => {
                   setRoomDeleteModalOpen(false);
                   if (roomsDetails) {
-                    onDeleteRoom(roomsDetails?.id);
+                    handleDeleteRoom(roomsDetails?.id);
                   }
                 }}
               />
@@ -277,7 +219,7 @@ const RoomDetail = () => {
               onCancel={() => setMessageToDelete(null)}
               onConfirm={() => {
                 if (messageToDelete) {
-                  onDeleteMessage(messageToDelete.id);
+                  deleteMessage(messageToDelete.id);
                   setMessageToDelete(null);
                 }
               }}
@@ -290,7 +232,7 @@ const RoomDetail = () => {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (inputValue.trim()) {
-                  onSendMessage(inputValue);
+                  sendMessage(inputValue);
                   setInputValue("");
                 }
               }}
