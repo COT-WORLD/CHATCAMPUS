@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-# Exit on error
 set -o errexit
 
-# Modify this line as needed for your package manager (pip, poetry, etc.)
-pip install poetry && poetry config virtualenvs.in-project true && poetry install --no-root --no-interaction
+# Install Poetry
+pip install poetry
 
+# Configure Poetry
+poetry config virtualenvs.in-project true
+
+# Install dependencies (fix typo: oetry -> poetry)
+poetry install --no-root --no-interaction
+
+# Create staticfiles directory
+mkdir -p staticfiles
+
+# Collect static files
 poetry run python manage.py collectstatic --noinput
 
-
-# Apply any outstanding database migrations
+# Apply migrations
 poetry run python manage.py migrate
