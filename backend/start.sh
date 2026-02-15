@@ -9,7 +9,7 @@ echo "==================="
 
 # Test Django imports
 poetry run python -c "import django; print('Django OK:', django.VERSION)"
-poetry run python -c "from pro.asgi import application; print('ASGI OK')"
+poetry run python -c "from chatcampuspro.asgi import application; print('ASGI OK')"
 
 poetry run celery -A chatcampuspro worker --loglevel=info --concurrency=1 &
 sleep 2
