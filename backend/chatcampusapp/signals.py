@@ -4,8 +4,8 @@ from django.contrib.auth import get_user_model
 from chatcampusapp.tasks import invalidate_and_warm_all_cache
 from chatcampusapp.models import Topic, Room, Message
 from faker import Faker
+from faker.providers import BaseProvider
 import random
-from dummy_text_generator import generate_sentence
 from decouple import config
 import sys
 from django.core.cache import cache
@@ -23,6 +23,19 @@ TOPIC_NAMES = [
 FIRST_NAMES = [
     "Alice", "Bob", "Charlie", "Diana", "Ethan", "Fiona", "George", "Hannah", "Ivan", "Jasmine"
 ]
+
+class TechProvider(BaseProvider):
+    tech_topics = [
+        "technology", "programming", "software development", 
+        "education", "cloud computing", "AI", "web development"
+    ]
+    
+    def tech_sentence(self):
+        topic = random.choice(self.tech_topics)
+        return f"Experienced professional specializing in {topic} with a passion for innovation."
+
+fake.add_provider(TechProvider)
+
 
 
 @receiver(post_migrate)
@@ -51,9 +64,7 @@ def seed_initial_data():
 
 def create_users():
     if not User.objects.filter(email=config("DJANGO_SUPER_USER_EMAIL")).exists():
-        bio = generate_sentence(lang='en', topic=random.choice([
-            "technology", "programming", "software development", "education"
-        ]))
+        bio = fake.tech_sentence()
         User.objects.create_superuser(
             first_name=config("DJANGO_SUPER_USER_FIRSTNAME"),
             last_name=config("DJANGO_SUPER_USER_LASTNAME"),
@@ -65,9 +76,7 @@ def create_users():
     users = []
     for name in FIRST_NAMES:
         if not User.objects.filter(first_name=name.lower()).exists():
-            bio = generate_sentence(lang="en", topic=random.choice([
-                "technology", "programming", "software development", "education"
-            ]))
+            bio = fake.tech_sentence()
             user = User.objects.create_user(
                 first_name=name.lower(),
                 last_name="smith",
@@ -130,8 +139,7 @@ def add_messages_and_participants(rooms, users):
         participants = set([room.owner])
         participants.update(other_participants)
 
-        host_message = generate_sentence(
-            lang="en", topic=room.topic.topic_name)
+        host_message = fake.tech_sentence()
         messages.append(
             Message(owner=room.owner, room=room, body=host_message)
         )
@@ -146,8 +154,7 @@ def add_messages_and_participants(rooms, users):
             num_messages = random.randint(1, 3)
 
             for _ in range(num_messages):
-                message_body = generate_sentence(
-                    lang="en", topic=room.topic.topic_name)
+                message_body = fake.tech_sentence()
                 messages.append(
                     Message(owner=participant,
                             room_id=room.id, body=message_body)
