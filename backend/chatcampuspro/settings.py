@@ -187,6 +187,10 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'ChatCampus API',
     'DESCRIPTION': 'DRF with SSO for ChatCampus',
     'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'DEFAULT_GENERATOR_CLASS': 'drf_spectacular.generators.SchemaGenerator',
+    'COMPONENT_SPLIT_REQUEST': True,
+    'POSTPROCESSING_HOOKS': [],
 }
 
 SIMPLE_JWT = {
