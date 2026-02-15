@@ -10,8 +10,6 @@ poetry config virtualenvs.in-project true
 # Install dependencies (fix typo: oetry -> poetry)
 poetry install --no-root --no-interaction
 
-# Create staticfiles directory
-mkdir -p staticfiles
 
 # Collect static files
 poetry run python manage.py collectstatic --noinput

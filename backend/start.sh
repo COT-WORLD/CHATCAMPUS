@@ -7,8 +7,6 @@ echo "PWD=$(pwd)"
 echo "FILES=$(ls -la)"
 echo "==================="
 
-mkdir -p staticfiles
-
 # Test Django imports
 poetry run python -c "import django; print('Django OK:', django.VERSION)"
 poetry run python -c "from pro.asgi import application; print('ASGI OK')"
